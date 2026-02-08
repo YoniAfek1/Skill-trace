@@ -246,7 +246,7 @@ def git_replan_node(state: AgentState) -> AgentState:
     # Case 1: Already looped once (count >= 1). Force stop.
     if count >= 1:
         decision = "FINISH"
-        reasoning = "Maximum iterations (2) reached. Proceeding to final analysis to save resources."
+        reasoning = "There is enough data to create a summary."
         
     # Case 2: First time (count == 0). Ask LLM but request leniency.
     else:
