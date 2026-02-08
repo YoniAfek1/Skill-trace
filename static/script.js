@@ -1,4 +1,4 @@
-console.log("[DEBUG] static.script: loaded v4.0 (Fail-Safe Mode)");
+console.log("[DEBUG] static.script: loaded v5.0 (Dark Mode Fixed)");
 
 async function runAnalysis() {
   console.log("[DEBUG] runAnalysis: start");
@@ -39,20 +39,15 @@ async function runAnalysis() {
 
     statusEl.textContent = "Analysis complete.";
 
-    // --- המנגנון החדש (Fail-Safe Logic) ---
-    // 1. ניסיון ראשון: קריאה ישירה מהשרת
+    // --- Fail-Safe Logic for Final Response ---
     let finalText = data.response;
 
-    // 2. ניסיון שני: אם הראשי ריק, חפש את השלב האחרון
     if (!finalText || finalText.trim().length === 0) {
         console.warn("[DEBUG] Main response empty, checking steps...");
-        
         if (Array.isArray(data.steps) && data.steps.length > 0) {
-            // רץ על השלבים מהסוף להתחלה כדי למצוא את הסיכום
             for (let i = data.steps.length - 1; i >= 0; i--) {
                 const step = data.steps[i];
                 if (step.module === "Final Analysis" && step.response && step.response.length > 10) {
-                    console.log("[DEBUG] Recovered text from Final Analysis step");
                     finalText = step.response;
                     break;
                 }
@@ -60,15 +55,13 @@ async function runAnalysis() {
         }
     }
 
-    // 3. הצגת הטקסט הסופי
     if (finalText) {
         finalEl.innerText = finalText;
     } else {
         finalEl.innerText = "Error: Analysis finished but no text could be extracted.";
     }
-    // ---------------------------------------
 
-    // Render Steps
+    // --- Render Steps (Dark Mode) ---
     if (Array.isArray(data.steps)) {
       renderSteps(data.steps, stepsEl);
     }
@@ -83,28 +76,45 @@ function renderSteps(steps, container) {
     steps.forEach((step, idx) => {
       const item = document.createElement("div");
       item.className = "step-item";
+      // ensure item has dark background via style or css class
+      item.style.border = "1px solid #374151";
+      item.style.marginBottom = "10px";
+      item.style.borderRadius = "8px";
+      item.style.overflow = "hidden";
 
       const header = document.createElement("div");
       header.className = "step-header";
+      // Header styling
+      header.style.background = "#1f2937";
+      header.style.padding = "10px";
+      header.style.cursor = "pointer";
+      header.style.display = "flex";
+      header.style.justifyContent = "space-between";
+      header.style.alignItems = "center";
+      
       header.innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px; color: #e5e7eb;">
           <span class="chevron">▶</span> 
           <strong>${idx + 1}. ${step.module}</strong>
         </div>
-        <span class="badge" style="font-size: 0.8em; opacity: 0.7;">View Log</span>
+        <span class="badge" style="font-size: 0.8em; background: #2563eb; color: white; padding: 2px 8px; border-radius: 12px;">View Log</span>
       `;
 
       const body = document.createElement("div");
       body.className = "step-body";
       body.style.display = "none";
-      body.style.padding = "10px";
-      body.style.background = "#f4f4f4";
-      body.style.marginTop = "5px";
+      // Body styling - DARK MODE COLORS
+      body.style.padding = "15px";
+      body.style.background = "#111827"; // Dark background
+      body.style.borderTop = "1px solid #374151";
+      
+      // Using pre-wrap and specific colors for the code blocks
       body.innerHTML = `
-        <div style="margin-bottom: 5px;"><strong>Input:</strong></div>
-        <pre style="white-space: pre-wrap; background: #e0e0e0; padding: 5px; margin-bottom: 10px;">${step.prompt}</pre>
-        <div style="margin-bottom: 5px;"><strong>Output:</strong></div>
-        <pre style="white-space: pre-wrap; background: #fff; border: 1px solid #ccc; padding: 5px;">${step.response}</pre>
+        <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Input:</strong></div>
+        <pre style="white-space: pre-wrap; background: #1f2937; color: #d1d5db; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #374151;">${step.prompt}</pre>
+        
+        <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Output:</strong></div>
+        <pre style="white-space: pre-wrap; background: #020617; color: #e5e7eb; padding: 10px; border-radius: 6px; border: 1px solid #374151;">${step.response}</pre>
       `;
 
       header.addEventListener("click", () => {
