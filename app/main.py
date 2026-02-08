@@ -194,4 +194,4 @@ def index() -> FileResponse:
     return FileResponse(os.path.join("static", "index.html"), media_type="text/html")
 
 
-print("[DEBUG] app.main: Module import end")
+print("[DEBUG] app.main: Module import end.")
