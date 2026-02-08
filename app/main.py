@@ -41,7 +41,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 graph_app = build_graph()
 
 
-
 @app.get("/api/team_info", response_model=TeamInfo)
 def get_team_info() -> TeamInfo:
     """Return metadata about the student team that built this project.
@@ -59,7 +58,7 @@ def get_team_info() -> TeamInfo:
     
     info = TeamInfo(
         group_batch_order_number="batch3_order3", 
-        team_name="יוני שני ובר",
+        team_name="Yoni, Shani, and Bar",
         students=students_list
     )
     print("[DEBUG] get_team_info: end")
@@ -156,7 +155,7 @@ async def execute(request: ExecuteRequest):
     """
     Run the multi-agent workflow based on the provided resume text/URL.
     """
-    # 1. יצירת ה-State ההתחלתי
+    # 1. Create the initial AgentState
     initial_state: AgentState = {
         "resume_text": request.prompt,
         "steps": [],
@@ -164,9 +163,8 @@ async def execute(request: ExecuteRequest):
         "visited_repos": []
     }
 
-    # 2. הרצת הגרף
     try:
-        final_state = app_graph.invoke(initial_state)
+        final_state = graph_app.invoke(initial_state)
     except Exception as e:
         return ExecuteResponse(
             status="error",
@@ -175,20 +173,20 @@ async def execute(request: ExecuteRequest):
             steps=[]
         )
 
-    # 3. שליפת התשובה הסופית בצורה בטוחה
-    # התיקון: מוודאים שאנחנו לוקחים את 'final_analysis'. אם זה ריק, מחזירים הודעת שגיאה.
+    # 3. Safely retrieve the final response
+    # Verification: Ensure we retrieve 'final_analysis'. If empty, return an error message.
     final_text = final_state.get("final_analysis")
     
     if not final_text:
-        # במקרה נדיר שהסוכן האחרון נכשל ולא ייצר טקסט
+        # Fallback for rare cases where the last agent fails to generate output
         final_text = "Analysis completed, but no final text was generated."
 
     return ExecuteResponse(
         status="success",
-        response=final_text,  # זה השדה הקריטי שה-JS מחפש!
+        response=final_text,  # This is the critical field the frontend JS expects!
         steps=final_state.get("steps", [])
     )
-    
+
 @app.get("/")
 def index() -> FileResponse:
     """Serve the main HTML file for the front-end UI."""

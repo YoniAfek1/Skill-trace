@@ -138,7 +138,7 @@ def git_planner_node(state: AgentState) -> AgentState:
     username = state.get("github_username")
     count = state.get("git_iteration_count", 0)
     
-    # שם המודול משתנה בהתאם לסיבוב
+    # Module name changes based on iteration count
     module_name = f"Git Planner {count + 1}" if count > 0 else "Git Planner"
     
     if not username and url:
@@ -157,7 +157,7 @@ def git_planner_node(state: AgentState) -> AgentState:
 
     llm = _build_llm()
     
-    # הנחיה לניסוח פקודות (Imperative Mood)
+    # Prompt using Imperative Mood for instructions
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are a Tech Lead instructing a Code Reviewer.\n"
                    "Select the ONE best repo to analyze next (ignore 'Already Visited').\n"
@@ -190,7 +190,7 @@ def git_executor_node(state: AgentState) -> AgentState:
     repo_list_str = state.get("user_repos_metadata")
     count = state.get("git_iteration_count", 0)
 
-    # שם המודול משתנה בהתאם לסיבוב
+    # Module name changes based on iteration count
     module_name = f"Git Executor {count + 1}" if count > 0 else "Git Executor"
     
     llm = _build_llm()
@@ -238,17 +238,17 @@ def git_replan_node(state: AgentState) -> AgentState:
     findings = state.get("technical_analysis")
     count = state.get("git_iteration_count", 0)
     
-    # שם המודול משתנה בהתאם לסיבוב
+    # Module name changes based on iteration count
     module_name = f"Git Replan {count + 1}" if count > 0 else "Git Replan"
     
-    # --- לוגיקה מעודכנת ---
+    # --- Updated Logic ---
     
-    # מקרה 1: כבר היינו בלולאה פעם אחת (count >= 1). עוצרים בכוח.
+    # Case 1: Already looped once (count >= 1). Force stop.
     if count >= 1:
         decision = "FINISH"
         reasoning = "Maximum iterations (2) reached. Proceeding to final analysis to save resources."
         
-    # מקרה 2: פעם ראשונה (count == 0). שואלים את ה-LLM אבל מבקשים רחמים.
+    # Case 2: First time (count == 0). Ask LLM but request leniency.
     else:
         prompt = ChatPromptTemplate.from_messages([
             ("system", "Evaluator. Do we have enough info to grade the candidate (60-100)?\n"
@@ -271,7 +271,7 @@ def git_replan_node(state: AgentState) -> AgentState:
             decision = "FINISH"
             reasoning = "Error parsing decision, assuming finished."
 
-    # עדכון המונה לפעם הבאה
+    # Update counter for next time
     state["git_iteration_count"] = count + 1
     
     print(f"[DEBUG] Replan Decision: {decision}")
