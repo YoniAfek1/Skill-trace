@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Multi-Agent Data Science Resume Analyzer</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header>
+        <h1>Multi-Agent Data Science Resume Analyzer</h1>
+        <p>Supervisor → Screening Agent → Git Plan-and-Execute Agent</p>
+      </header>
+
+      <main>
+        <section class="input-section">
+          <h2>Resume &amp; GitHub URL</h2>
+          <textarea
+            id="prompt"
+            placeholder="Paste your resume here, including your GitHub URL..."
+          ></textarea>
+          <button id="run-btn">Run Analysis</button>
+          <div id="status" class="status"></div>
+        </section>
+
+        <section class="output-section">
+          <h2>Final Response</h2>
+          <pre id="final-response" class="code-block"></pre>
+        </section>
+
+        <section class="steps-section">
+          <h2>Agent Steps</h2>
+          <div id="steps-container"></div>
+        </section>
+      </main>
+
+      <footer>
+        <div class="architecture">
+          <h2>Model Architecture</h2>
+          <img src="/api/model_architecture" alt="Architecture" />
+        </div>
+      </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+  </body>
+</html>
+
