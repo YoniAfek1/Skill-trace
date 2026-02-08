@@ -152,66 +152,43 @@ def get_model_architecture() -> FileResponse:
 
 # --- Endpoint D: Execute (Main) ---
 @app.post("/api/execute", response_model=ExecuteResponse)
-def execute(request: ExecuteRequest) -> ExecuteResponse:
-    """Run the full multi-agent pipeline for a given resume prompt.
-
-    The endpoint instantiates the initial `AgentState`, invokes the LangGraph
-    workflow, and maps the resulting state back into the public response model.
-
-    Args:
-        request: Incoming payload containing the resume text (and GitHub URL).
-
-    Returns:
-        An `ExecuteResponse` with final analysis text and a detailed step trace.
+async def execute(request: ExecuteRequest):
     """
-    print("[DEBUG] execute: start")
-
-    # Initialize the shared AgentState for the graph.
+    Run the multi-agent workflow based on the provided resume text/URL.
+    """
+    # 1. יצירת ה-State ההתחלתי
     initial_state: AgentState = {
         "resume_text": request.prompt,
         "steps": [],
-        "git_iteration_count": 0
+        "git_iteration_count": 0,
+        "visited_repos": []
     }
-    
+
+    # 2. הרצת הגרף
     try:
-        result_state = graph_app.invoke(initial_state)
-        print("[DEBUG] execute: graph invocation complete")
-        
-        status = "ok"
-        error_msg = None
+        final_state = app_graph.invoke(initial_state)
     except Exception as e:
-        print(f"[DEBUG] execute: error during invocation {e}")
-        status = "error"
-        error_msg = str(e)
-        result_state = {}
+        return ExecuteResponse(
+            status="error",
+            error=str(e),
+            response="Internal Server Error during execution.",
+            steps=[]
+        )
 
-    final_text = result_state.get("final_analysis")
+    # 3. שליפת התשובה הסופית בצורה בטוחה
+    # התיקון: מוודאים שאנחנו לוקחים את 'final_analysis'. אם זה ריק, מחזירים הודעת שגיאה.
+    final_text = final_state.get("final_analysis")
     
-    if not final_text and status == "ok":
-        final_text = result_state.get("final_response") or "No analysis generated."
+    if not final_text:
+        # במקרה נדיר שהסוכן האחרון נכשל ולא ייצר טקסט
+        final_text = "Analysis completed, but no final text was generated."
 
-    raw_steps = result_state.get("steps", [])
-    
-    steps = [
-        StepModel(
-            module=s.get("module", "Unknown"),
-            prompt=str(s.get("prompt", "")),
-            response=str(s.get("response", ""))
-        ) 
-        for s in raw_steps
-    ]
-
-    response = ExecuteResponse(
-        status=status,
-        error=error_msg,
-        response=final_text if final_text else "", 
-        steps=steps,
+    return ExecuteResponse(
+        status="success",
+        response=final_text,  # זה השדה הקריטי שה-JS מחפש!
+        steps=final_state.get("steps", [])
     )
     
-    print("[DEBUG] execute: end")
-    return response
-
-
 @app.get("/")
 def index() -> FileResponse:
     """Serve the main HTML file for the front-end UI."""
