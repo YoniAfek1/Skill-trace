@@ -182,8 +182,9 @@ async def execute(request: ExecuteRequest):
         final_text = "Analysis completed, but no final text was generated."
 
     return ExecuteResponse(
-        status="success",
-        response=final_text,  # This is the critical field the frontend JS expects!
+        status="ok",
+        error=None,
+        response=final_text,
         steps=final_state.get("steps", [])
     )
 

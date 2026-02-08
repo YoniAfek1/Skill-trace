@@ -1,112 +1,103 @@
-console.log("[DEBUG] static.script: loaded");
+console.log("[DEBUG] loaded: script.js v3.0 (Diagnostic Mode)");
 
 async function runAnalysis() {
-  console.log("[DEBUG] runAnalysis: start");
-  const promptEl = document.getElementById("prompt");
   const statusEl = document.getElementById("status");
-  const finalEl = document.getElementById("final-response"); // ודא שב-HTML יש אלמנט עם ID כזה
+  const finalEl = document.getElementById("final-response");
   const stepsEl = document.getElementById("steps-container");
+  const promptEl = document.getElementById("prompt");
 
-  const prompt = promptEl.value.trim();
-  if (!prompt) {
-    statusEl.textContent = "Please paste your resume text (with GitHub URL).";
-    console.log("[DEBUG] runAnalysis: empty prompt");
+  // בדיקת תקינות בסיסית - האם האלמנט קיים?
+  if (!finalEl) {
+    alert("CRITICAL ERROR: Could not find element with id 'final-response' in HTML!");
     return;
   }
 
-  // איפוס התצוגה לפני הריצה
-  statusEl.textContent = "Running multi-agent analysis...";
-  finalEl.innerText = ""; // שימוש ב-innerText שומר על שורות ריקות
+  const prompt = promptEl.value.trim();
+  if (!prompt) {
+    statusEl.textContent = "Please paste resume text.";
+    return;
+  }
+
+  // איפוס וכתיבת הודעת בדיקה
+  statusEl.textContent = "Running...";
+  finalEl.style.color = "yellow"; // צבע בולט לבדיקה
+  finalEl.innerText = "Waiting for server response..."; 
   stepsEl.innerHTML = "";
 
   try {
     const resp = await fetch("/api/execute", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt }),
     });
 
     const data = await resp.json();
-    console.log("[DEBUG] runAnalysis: response received", data);
+    console.log("[DEBUG] Raw Data:", data);
 
-    // תיקון בדיקת הסטטוס: בודקים אם יש שגיאה במפורש
+    // 1. האם השרת החזיר שגיאה?
     if (data.status === "error") {
-      statusEl.textContent = data.error || "Unexpected error from API.";
+      statusEl.textContent = "Error from server.";
+      finalEl.innerText = "SERVER ERROR:\n" + data.error;
       return;
     }
 
     statusEl.textContent = "Analysis complete.";
 
-    // --- התיקון המרכזי כאן ---
-    // השרת מחזיר את הטקסט בתוך 'response', לא 'final_analysis'
-    if (data.response) {
-        finalEl.innerText = data.response; 
+    // 2. ניסיון אגרסיבי לחלץ את הטקסט
+    let finalText = data.response;
+    let source = "Direct Response";
+
+    // אם ריק, נחפש בשלבים (Fail-Safe)
+    if (!finalText || finalText.trim().length === 0) {
+        if (data.steps && data.steps.length > 0) {
+            const lastStep = data.steps[data.steps.length - 1];
+            finalText = lastStep.response;
+            source = "Recovered from Step " + data.steps.length;
+        }
+    }
+
+    // 3. הצגה במסך (או הודעת שגיאה אם עדיין ריק)
+    finalEl.style.color = "#e4e9f5"; // החזרת צבע רגיל
+    
+    if (finalText) {
+        finalEl.innerText = finalText;
+        console.log(`[SUCCESS] Text rendered from: ${source}`);
     } else {
-        finalEl.innerText = "No final response text returned from server.";
+        finalEl.style.color = "red";
+        finalEl.innerText = "DEBUG FAILURE: Server returned success, but text is empty!\n" + 
+                            "Check 'Agent Steps' below to see if the AI generated output.";
     }
-    // ------------------------
 
-    if (Array.isArray(data.steps)) {
-      data.steps.forEach((step, idx) => {
-        const item = document.createElement("div");
-        item.className = "step-item";
-
-        // יצירת הכותרת של השלב
-        const header = document.createElement("div");
-        header.className = "step-header";
-        
-        // הוספת חץ קטן וסמל
-        header.innerHTML = `
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span class="chevron">▶</span> 
-            <strong>${idx + 1}. ${step.module}</strong>
-          </div>
-          <span class="badge" style="font-size: 0.8em; opacity: 0.7;">View Log</span>
-        `;
-
-        const body = document.createElement("div");
-        body.className = "step-body";
-        // הסתרת הגוף כברירת מחדל
-        body.style.display = "none";
-        body.style.padding = "10px";
-        body.style.background = "#f4f4f4";
-        body.style.marginTop = "5px";
-        
-        body.innerHTML = `
-          <div style="margin-bottom: 5px;"><strong>Input Prompt:</strong></div>
-          <pre style="white-space: pre-wrap; background: #e0e0e0; padding: 5px; margin-bottom: 10px;">${step.prompt}</pre>
-          <div style="margin-bottom: 5px;"><strong>AI Response:</strong></div>
-          <pre style="white-space: pre-wrap; background: #fff; border: 1px solid #ccc; padding: 5px;">${step.response}</pre>
-        `;
-
-        // לוגיקה לפתיחה/סגירה של השלב
-        header.style.cursor = "pointer";
-        header.addEventListener("click", () => {
-          const isOpen = body.style.display !== "none";
-          body.style.display = isOpen ? "none" : "block";
-          const chevron = header.querySelector(".chevron");
-          if (chevron) chevron.innerText = isOpen ? "▶" : "▼";
-        });
-
-        item.appendChild(header);
-        item.appendChild(body);
-        stepsEl.appendChild(item);
-      });
+    // הצגת השלבים
+    if (data.steps) {
+      renderSteps(data.steps, stepsEl);
     }
+
   } catch (err) {
-    console.error("[DEBUG] runAnalysis: error", err);
-    statusEl.textContent = "Failed to reach backend. Check console and server logs.";
+    console.error(err);
+    statusEl.textContent = "Communication Error";
+    finalEl.innerText = "JS ERROR:\n" + err.toString();
   }
+}
 
-  console.log("[DEBUG] runAnalysis: end");
+function renderSteps(steps, container) {
+  steps.forEach((step, idx) => {
+    const item = document.createElement("div");
+    item.className = "step-item";
+    item.innerHTML = `
+      <div class="step-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+        <strong>${idx + 1}. ${step.module}</strong> <span style="font-size:0.8em">▼</span>
+      </div>
+      <div class="step-body" style="display:none; padding:10px; background:#222; margin-top:5px;">
+        <div><strong>Input:</strong></div><pre style="white-space:pre-wrap; color:#aaa">${step.prompt}</pre>
+        <div style="margin-top:10px"><strong>Output:</strong></div><pre style="white-space:pre-wrap; color:#fff">${step.response}</pre>
+      </div>
+    `;
+    container.appendChild(item);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("[DEBUG] DOMContentLoaded");
   const btn = document.getElementById("run-btn");
-  if (btn) {
-      btn.addEventListener("click", runAnalysis);
-  }
+  if (btn) btn.addEventListener("click", runAnalysis);
 });

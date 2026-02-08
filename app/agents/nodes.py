@@ -301,11 +301,14 @@ def final_analysis_node(state: AgentState) -> AgentState:
         system_prompt = "You are a Hiring Manager. Write a polite, short rejection (MAX 30 WORDS)."
         user_content = f"Feedback: {screen_feedback}"
     else:
+        # --- עדכון: פרומפט מובנה וקצר ---
         system_prompt = (
-            "You are a Hiring Manager. Output 3 sections:\n"
+            "You are a Hiring Manager. Output the following 5 sections strictly:\n"
             "**Final Score:** [60-100]\n"
-            "**Candidate Profile:** [Summary]\n"
-            "**Strengths & Gaps:** [Details]"
+            "**Candidate Profile:** [Summary max 5 sentences]\n"
+            "**Strengths:** [Exactly 3 bullet points]\n"
+            "**Gaps:** [Exactly 3 bullet points]\n"
+            "**Overall:** [Summary max 2 sentences]"
         )
         user_content = f"Screening Feedback: {screen_feedback}\n\nTechnical Analysis:\n{tech_analysis}"
     
