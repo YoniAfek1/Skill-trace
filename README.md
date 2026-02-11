@@ -1,5 +1,5 @@
 # 🤖 Multi-Agent Resume Analyzer
- 
+
 A sophisticated **Multi-Agent System** designed to automate the screening process. 
 The system evaluates candidates by analyzing their **Resume text** and performing a deep-dive technical audit of their **GitHub repositories**.
 
