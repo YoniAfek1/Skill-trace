@@ -4,7 +4,8 @@ This module wires together the LangGraph workflow with HTTP endpoints consumed
 by the front-end UI and any external clients. It also exposes static assets for
 the single-page interface.
 """
-
+import json 
+from fastapi.responses import FileResponse, StreamingResponse # ודא ש-StreamingResponse נוסף
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -150,43 +151,42 @@ def get_model_architecture() -> FileResponse:
 
 
 # --- Endpoint D: Execute (Main) ---
-@app.post("/api/execute", response_model=ExecuteResponse)
-async def execute(request: ExecuteRequest):
+@app.post("/api/execute")
+def execute(request: ExecuteRequest):
     """
     Run the multi-agent workflow based on the provided resume text/URL.
+    Streams the steps as they are executed using Server-Sent Events (SSE).
     """
-    # 1. Create the initial AgentState
-    initial_state: AgentState = {
-        "resume_text": request.prompt,
-        "steps": [],
-        "git_iteration_count": 0,
-        "visited_repos": []
-    }
+    def event_generator():
+        initial_state: AgentState = {
+            "resume_text": request.prompt,
+            "steps": [],
+            "git_iteration_count": 0,
+            "visited_repos": []
+        }
+        final_text = ""
+        
+        try:
+            for event in graph_app.stream(initial_state):
+                for node_name, state_update in event.items():
+                    
+                    if "steps" in state_update and state_update["steps"]:
+                        latest_step = state_update["steps"][-1] 
+                        yield f"data: {json.dumps({'type': 'step', 'step': latest_step})}\n\n"
+                    
+                    if "final_analysis" in state_update:
+                        raw = state_update["final_analysis"]
+                        final_text = str(raw).strip() if raw else ""
 
-    try:
-        final_state = graph_app.invoke(initial_state)
-    except Exception as e:
-        return ExecuteResponse(
-            status="error",
-            error=str(e),
-            response="Internal Server Error during execution.",
-            steps=[]
-        )
+            if not final_text:
+                final_text = "Analysis completed, but no final text was generated."
+            
+            yield f"data: {json.dumps({'type': 'done', 'response': final_text})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
 
-    # 3. Safely retrieve the final response
-    # Verification: Ensure we retrieve 'final_analysis'. If empty, return an error message.
-    final_text = final_state.get("final_analysis")
-    
-    if not final_text:
-        # Fallback for rare cases where the last agent fails to generate output
-        final_text = "Analysis completed, but no final text was generated."
-
-    return ExecuteResponse(
-        status="ok",
-        error=None,
-        response=final_text,
-        steps=final_state.get("steps", [])
-    )
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.get("/")
 def index() -> FileResponse:
