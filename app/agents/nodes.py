@@ -119,7 +119,7 @@ def screening_agent_node(state: AgentState) -> AgentState:
 
     state["screening_decision"] = decision
     state["screening_feedback"] = feedback
-    
+
     steps = state.get("steps", [])
     steps.append({
         "module": "Screening Agent",
@@ -276,7 +276,7 @@ def git_replan_node(state: AgentState) -> AgentState:
     
     print(f"[DEBUG] Replan Decision: {decision}")
     state["replan_decision"] = decision 
-    
+
     steps = state.get("steps", [])
     steps.append({
         "module": module_name, 
@@ -296,27 +296,84 @@ def final_analysis_node(state: AgentState) -> AgentState:
     tech_analysis = state.get("technical_analysis", "")
     
     llm = _build_llm()
-    
+
     if decision == "NO":
-        system_prompt = "You are a Hiring Manager. Write a polite, short rejection (MAX 30 WORDS)."
-        user_content = f"Feedback: {screen_feedback}"
-    else:
-        # --- עדכון: פרומפט מובנה וקצר ---
         system_prompt = (
-            "You are a Hiring Manager. Output the following 5 sections strictly:\n"
-            "**Final Score:** [60-100]\n"
-            "**Candidate Profile:** [Summary max 5 sentences]\n"
-            "**Strengths:** [Exactly 3 bullet points]\n"
-            "**Gaps:** [Exactly 3 bullet points]\n"
-            "**Overall:** [Summary max 2 sentences]"
+            "You are a Technical Recruiter Assistant.\n"
+            "Generate a structured hiring evaluation report for the hiring manager.\n"
+            "This candidate does NOT meet the required threshold.\n"
+            "Use ONLY the provided Screening Feedback and Technical Analysis.\n"
+            "Do NOT invent skills or information.\n"
+            "Be concise, objective, and HR-friendly.\n\n"
+
+            "Return EXACTLY the following sections:\n\n"
+
+            "Decision: REJECT\n\n"
+
+            "Final Score: [Integer between 40 and 59]\n"
+            "- Score must reflect insufficient technical depth or role mismatch.\n\n"
+
+            "Candidate Summary:\n"
+            "- Maximum 4 sentences.\n"
+            "- Neutral and professional tone.\n\n"
+
+            "Primary Gaps / Concerns:\n"
+            "- Exactly 3 bullet points.\n"
+            "- Focus on evidence-based gaps.\n\n"
+
+            "Recommendation for HR:\n"
+            "- Maximum 2 sentences.\n"
+            "- Clear reasoning for rejection.\n"
         )
-        user_content = f"Screening Feedback: {screen_feedback}\n\nTechnical Analysis:\n{tech_analysis}"
-    
+
+        user_content = (
+            f"Screening Feedback:\n{screen_feedback}\n\n"
+            f"Technical Analysis:\n{tech_analysis}"
+        )
+
+    else:
+        system_prompt = (
+            "You are a Technical Recruiter Assistant.\n"
+            "Generate a structured hiring evaluation report for the hiring manager.\n"
+            "Use ONLY the provided Screening Feedback and Technical Analysis.\n"
+            "Do NOT invent skills or information.\n"
+            "If evidence is insufficient, explicitly state 'Insufficient evidence'.\n"
+            "Be concise, structured, and HR-friendly.\n\n"
+
+            "Return EXACTLY the following sections:\n\n"
+
+            "Decision: [CONSIDER / INTERVIEW / STRONG YES]\n\n"
+
+            "Final Score: [Integer between 60 and 100]\n"
+            "- Score must reflect technical depth, engineering quality, and fit.\n\n"
+
+            "Candidate Summary:\n"
+            "- Maximum 5 sentences.\n\n"
+
+            "Verified Strengths:\n"
+            "- Exactly 3 bullet points.\n\n"
+
+            "Risks / Gaps:\n"
+            "- Exactly 3 bullet points.\n\n"
+
+            "Interview Focus Areas:\n"
+            "- Exactly 3 bullet points.\n"
+            "- Specific technical areas to validate.\n\n"
+
+            "Recommendation for HR:\n"
+            "- Maximum 2 sentences.\n"
+        )
+
+        user_content = (
+            f"Screening Feedback:\n{screen_feedback}\n\n"
+            f"Technical Analysis:\n{tech_analysis}"
+        )
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         ("user", user_content)
     ])
-    
+
     res = llm.invoke(prompt.format_messages())
     final_text = res.content
     state["final_analysis"] = final_text
