@@ -10,6 +10,16 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+function formatTracePayload(value) {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "string") return value;
+    try {
+        return JSON.stringify(value, null, 2);
+    } catch {
+        return String(value);
+    }
+}
+
 function typeFinalResponse(text, container) {
     container.innerText = "";
     let i = 0;
@@ -63,12 +73,15 @@ function renderSingleStep(step, container, idx) {
     body.style.background = "#111827";
     body.style.borderTop = "1px solid #374151";
 
-    body.innerHTML = `
-        <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Input:</strong></div>
-        <pre style="white-space: pre-wrap; background: #1f2937; color: #d1d5db; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #374151;">${escapeHtml(step.prompt)}</pre>
+    const promptText = formatTracePayload(step.prompt);
+    const responseText = formatTracePayload(step.response);
 
-        <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Output:</strong></div>
-        <pre style="white-space: pre-wrap; background: #020617; color: #e5e7eb; padding: 10px; border-radius: 6px; border: 1px solid #374151;">${escapeHtml(step.response)}</pre>
+    body.innerHTML = `
+        <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Prompt:</strong></div>
+        <pre style="white-space: pre-wrap; background: #1f2937; color: #d1d5db; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #374151;">${escapeHtml(promptText)}</pre>
+
+        <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Response:</strong></div>
+        <pre style="white-space: pre-wrap; background: #020617; color: #e5e7eb; padding: 10px; border-radius: 6px; border: 1px solid #374151;">${escapeHtml(responseText)}</pre>
     `;
 
     header.addEventListener("click", () => {
