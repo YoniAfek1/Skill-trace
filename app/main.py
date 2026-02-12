@@ -165,14 +165,18 @@ def execute(request: ExecuteRequest):
             "visited_repos": []
         }
         final_text = ""
+        emitted_steps_count = 0
         
         try:
             for event in graph_app.stream(initial_state):
                 for node_name, state_update in event.items():
                     
                     if "steps" in state_update and state_update["steps"]:
-                        latest_step = state_update["steps"][-1] 
-                        yield f"data: {json.dumps({'type': 'step', 'step': latest_step})}\n\n"
+                        # Emit every newly appended step, not only the latest one.
+                        new_steps = state_update["steps"][emitted_steps_count:]
+                        for step in new_steps:
+                            yield f"data: {json.dumps({'type': 'step', 'step': step})}\n\n"
+                        emitted_steps_count = len(state_update["steps"])
                     
                     if "final_analysis" in state_update:
                         raw = state_update["final_analysis"]
