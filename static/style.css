@@ -4,35 +4,136 @@
   padding: 0;
 }
 
+:root {
+  --bg: #050816;
+  --panel-a: #1f2937;
+  --panel-b: #0b1120;
+  --panel-c: #020617;
+  --line: #334155;
+  --muted: #94a3b8;
+  --text: #e4e9f5;
+  --brand-a: #60a5fa;
+  --brand-b: #22d3ee;
+}
+
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #050816;
-  color: #e4e9f5;
+  font-family: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(34, 211, 238, 0.09), transparent 45%),
+    radial-gradient(circle at 85% 0%, rgba(96, 165, 250, 0.09), transparent 45%),
+    var(--bg);
+  color: var(--text);
   line-height: 1.5;
 }
 
 .app-container {
-  max-width: 1600px; 
+  max-width: 1600px;
   margin: 0 auto;
   padding: 24px;
 }
 
 header {
   margin-bottom: 24px;
-  text-align: center;
 }
 
-header h1 {
-  font-size: 2rem;
-  margin-bottom: 6px;
-  background: linear-gradient(90deg, #60a5fa, #c084fc);
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.brand-logo {
+  position: relative;
+  width: 86px;
+  height: 86px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, rgba(96, 165, 250, 0.2), rgba(34, 211, 238, 0.06));
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.55);
+  transition: transform 240ms ease, box-shadow 240ms ease;
+  animation: logoFloat 4s ease-in-out infinite;
+  overflow: hidden;
+}
+
+.brand-logo:hover {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow: 0 22px 46px rgba(2, 6, 23, 0.72);
+}
+
+.brand-core,
+.orbit,
+.orbit-dot {
+  position: absolute;
+}
+
+.brand-core,
+.orbit-dot {
+  border-radius: 999px;
+}
+
+.orbit {
+  inset: 10px;
+  border-radius: 999px;
+  border: 1px dashed rgba(148, 163, 184, 0.2);
+  animation: orbitSpin 8s linear infinite;
+}
+
+.orbit-2 {
+  inset: 17px;
+  animation-direction: reverse;
+  animation-duration: 5.8s;
+}
+
+.orbit-3 {
+  inset: 24px;
+  animation-duration: 4.2s;
+}
+
+.orbit-dot {
+  width: 8px;
+  height: 8px;
+  left: 50%;
+  top: -4px;
+  transform: translateX(-50%);
+  background: var(--brand-b);
+  box-shadow: 0 0 0 5px rgba(34, 211, 238, 0.14);
+}
+
+.orbit-2 .orbit-dot {
+  background: #7dd3fc;
+  box-shadow: 0 0 0 5px rgba(125, 211, 252, 0.13);
+}
+
+.orbit-3 .orbit-dot {
+  background: #bfdbfe;
+  box-shadow: 0 0 0 5px rgba(191, 219, 254, 0.12);
+}
+
+.brand-core {
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--brand-a);
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
+}
+
+.brand-text h1 {
+  font-family: "Space Grotesk", "Manrope", sans-serif;
+  font-size: clamp(1.7rem, 2.2vw, 2.25rem);
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  margin-bottom: 4px;
+  background: linear-gradient(90deg, var(--brand-a), var(--brand-b));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-header p {
-  font-size: 1rem;
-  color: #94a3b8;
+.brand-text p {
+  font-size: 0.95rem;
+  color: var(--muted);
 }
 
 main {
@@ -52,7 +153,7 @@ main {
 }
 
 section {
-  background: radial-gradient(circle at top left, #1f2937 0, #0b1120 55%, #020617 100%);
+  background: radial-gradient(circle at top left, var(--panel-a) 0, var(--panel-b) 55%, var(--panel-c) 100%);
   border-radius: 12px;
   border: 1px solid #1f2937;
   padding: 20px 24px;
@@ -74,11 +175,11 @@ section h2 {
   min-height: 250px;
   background: #0f172a;
   border-radius: 8px;
-  border: 1px solid #334155;
+  border: 1px solid var(--line);
   padding: 14px;
   resize: vertical;
   color: #f1f5f9;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.95rem;
   transition: border-color 0.2s;
 }
@@ -125,10 +226,10 @@ button#run-btn:active {
 .code-block {
   background: #0f172a;
   border-radius: 8px;
-  border: 1px solid #334155;
+  border: 1px solid var(--line);
   padding: 16px;
   white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.95rem;
   min-height: 250px;
   max-height: 500px;
@@ -186,20 +287,57 @@ footer {
 }
 
 footer h2 {
-    color: #94a3b8;
-    margin-bottom: 15px;
-    font-size: 1.2rem;
+  color: var(--muted);
+  margin-bottom: 15px;
+  font-size: 1.2rem;
 }
 
 footer img {
-  max-width: 1100px; 
+  max-width: 1100px;
   width: 100%;
   border-radius: 16px;
-  border: 2px solid #334155;
+  border: 2px solid var(--line);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   transition: transform 0.3s ease;
 }
 
 footer img:hover {
-    transform: scale(1.02);
+  transform: scale(1.02);
 }
+
+@media (max-width: 700px) {
+  .brand-wrap {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .brand-logo {
+    width: 74px;
+    height: 74px;
+    border-radius: 16px;
+  }
+
+  .brand-text p {
+    font-size: 0.85rem;
+  }
+}
+
+@keyframes logoFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes orbitSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+

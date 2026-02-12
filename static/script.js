@@ -1,4 +1,4 @@
-console.log("[DEBUG] static.script: loaded v6.0 (Streaming & Typewriter)");
+console.log("[DEBUG] static.script: loaded v7.0 (Brand + Streaming)");
 
 function escapeHtml(unsafe) {
     if (!unsafe) return "";
@@ -17,11 +17,11 @@ function typeFinalResponse(text, container) {
         container.innerText += text.charAt(i);
         i++;
         container.scrollTop = container.scrollHeight;
-        
+
         if (i >= text.length) {
             clearInterval(interval);
         }
-    }, 15); 
+    }, 15);
 }
 
 function renderSingleStep(step, container, idx) {
@@ -40,10 +40,10 @@ function renderSingleStep(step, container, idx) {
     header.style.display = "flex";
     header.style.justifyContent = "space-between";
     header.style.alignItems = "center";
-    
+
     header.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px; color: #e5e7eb;">
-        <span class="chevron">▶</span> 
+        <span class="chevron">></span>
         <strong>${idx}. ${escapeHtml(step.module)}</strong>
         </div>
         <span class="badge" style="font-size: 0.8em; background: #2563eb; color: white; padding: 2px 8px; border-radius: 12px;">View Log</span>
@@ -55,11 +55,11 @@ function renderSingleStep(step, container, idx) {
     body.style.padding = "15px";
     body.style.background = "#111827";
     body.style.borderTop = "1px solid #374151";
-    
+
     body.innerHTML = `
         <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Input:</strong></div>
         <pre style="white-space: pre-wrap; background: #1f2937; color: #d1d5db; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #374151;">${escapeHtml(step.prompt)}</pre>
-        
+
         <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Output:</strong></div>
         <pre style="white-space: pre-wrap; background: #020617; color: #e5e7eb; padding: 10px; border-radius: 6px; border: 1px solid #374151;">${escapeHtml(step.response)}</pre>
     `;
@@ -67,7 +67,7 @@ function renderSingleStep(step, container, idx) {
     header.addEventListener("click", () => {
         const isOpen = body.style.display !== "none";
         body.style.display = isOpen ? "none" : "block";
-        header.querySelector(".chevron").innerText = isOpen ? "▶" : "▼";
+        header.querySelector(".chevron").innerText = isOpen ? ">" : "v";
     });
 
     item.appendChild(header);
@@ -77,7 +77,7 @@ function renderSingleStep(step, container, idx) {
 
 async function runAnalysis() {
     console.log("[DEBUG] runAnalysis: start streaming");
-    
+
     const promptEl = document.getElementById("prompt");
     const statusEl = document.getElementById("status");
     const finalEl = document.getElementById("final-response");
@@ -90,7 +90,7 @@ async function runAnalysis() {
     }
 
     statusEl.textContent = "Starting multi-agent analysis...";
-    finalEl.innerText = ""; 
+    finalEl.innerText = "";
     stepsEl.innerHTML = "";
 
     try {
@@ -113,7 +113,7 @@ async function runAnalysis() {
         while (true) {
             const { value, done } = await reader.read();
             if (done) break;
-            
+
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n\n");
             buffer = lines.pop();
@@ -123,7 +123,7 @@ async function runAnalysis() {
                     const dataStr = line.substring(6);
                     try {
                         const data = JSON.parse(dataStr);
-                        
+
                         if (data.type === "step") {
                             stepCount++;
                             renderSingleStep(data.step, stepsEl, stepCount);
@@ -150,4 +150,20 @@ async function runAnalysis() {
 document.addEventListener("DOMContentLoaded", () => {
     const btn = document.getElementById("run-btn");
     if (btn) btn.addEventListener("click", runAnalysis);
+
+    const logo = document.getElementById("brand-logo");
+    if (!logo) return;
+
+    logo.addEventListener("mousemove", (event) => {
+        const rect = logo.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width - 0.5;
+        const y = (event.clientY - rect.top) / rect.height - 0.5;
+        const rx = y * -10;
+        const ry = x * 10;
+        logo.style.transform = `perspective(500px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+    });
+
+    logo.addEventListener("mouseleave", () => {
+        logo.style.transform = "";
+    });
 });
