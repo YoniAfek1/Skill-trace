@@ -23,8 +23,8 @@
             <span class="brand-core"></span>
           </div>
           <div class="brand-text">
-            <h1>Skill-Trace</h1>
-            <p>Supervisor -> Screening Agent -> Git Plan-and-Execute Agent</p>
+            <h1>SKILL-TRACE</h1>
+            <p>Bridging the gap between keywords and competency</p>
           </div>
         </div>
       </header>
@@ -41,8 +41,17 @@
         </section>
 
         <section class="output-section">
-          <h2>Final Response</h2>
-          <pre id="final-response" class="code-block"></pre>
+          <div class="section-head">
+            <h2>Competency Report</h2>
+          </div>
+          <div class="report-frame">
+            <div id="report-loading" class="report-loading" aria-live="polite" aria-hidden="true">
+              <span class="report-pulse-dot" aria-hidden="true"></span>
+              <span class="report-loading-text">Generating report...</span>
+              <span class="report-loading-hint">Tip: Watch Agent Steps below as analysis runs.</span>
+            </div>
+            <pre id="final-response" class="code-block"></pre>
+          </div>
         </section>
 
         <section class="steps-section">
@@ -62,4 +71,3 @@
     <script src="/static/script.js?v=brand_v2"></script>
   </body>
 </html>
-

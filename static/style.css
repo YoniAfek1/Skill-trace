@@ -45,8 +45,8 @@ header {
 
 .brand-logo {
   position: relative;
-  width: 86px;
-  height: 86px;
+  width: 90px;
+  height: 90px;
   border-radius: 20px;
   background: linear-gradient(160deg, rgba(96, 165, 250, 0.2), rgba(34, 211, 238, 0.06));
   border: 1px solid rgba(148, 163, 184, 0.28);
@@ -122,10 +122,10 @@ header {
 
 .brand-text h1 {
   font-family: "Space Grotesk", "Manrope", sans-serif;
-  font-size: clamp(1.7rem, 2.2vw, 2.25rem);
+  font-size: clamp(1.7rem, 3.7vw, 4.1rem);
   letter-spacing: 0.03em;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 1px;
   background: linear-gradient(90deg, var(--brand-a), var(--brand-b));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -163,11 +163,75 @@ section {
 }
 
 section h2 {
+  font-family: "Space Grotesk", "Manrope", sans-serif;
   font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   margin-bottom: 12px;
   color: #e2e8f0;
   border-bottom: 1px solid #374151;
   padding-bottom: 8px;
+}
+
+.section-head {
+  display: block;
+}
+
+.section-head h2 {
+  margin-bottom: 12px;
+  border-bottom: 1px solid #374151;
+  padding-bottom: 8px;
+}
+
+.report-frame {
+  position: relative;
+}
+
+.report-loading {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(2, 6, 23, 0.66);
+  backdrop-filter: blur(1px);
+  color: #93c5fd;
+  font-size: 0.86rem;
+  letter-spacing: 0.01em;
+  border-radius: 8px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 220ms ease, visibility 220ms ease;
+}
+
+.report-loading.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.report-pulse-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #60a5fa;
+  box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.45);
+  animation: reportPulse 1.35s ease-out infinite;
+}
+
+.report-loading-text {
+  margin-top: 4px;
+}
+
+.report-loading-hint {
+  max-width: 320px;
+  text-align: center;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .input-section textarea {
@@ -236,6 +300,16 @@ button#run-btn:active {
   overflow-y: auto;
   color: #e2e8f0;
   line-height: 1.6;
+  opacity: 1;
+  transition: opacity 260ms ease;
+}
+
+.code-block.report-pending {
+  opacity: 0.35;
+}
+
+.code-block.report-ready {
+  animation: reportReveal 300ms ease-out;
 }
 
 .steps-section {
@@ -287,9 +361,11 @@ footer {
 }
 
 footer h2 {
+  font-family: "Space Grotesk", "Manrope", sans-serif;
   color: var(--muted);
   margin-bottom: 15px;
   font-size: 1.2rem;
+  font-weight: 600;
 }
 
 footer img {
@@ -341,3 +417,28 @@ footer img:hover {
   }
 }
 
+@keyframes reportPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.45);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 12px rgba(96, 165, 250, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
+  }
+}
+
+@keyframes reportReveal {
+  from {
+    opacity: 0.18;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -24,6 +24,13 @@ function typeFinalResponse(text, container) {
     }, 15);
 }
 
+function setReportLoading(isLoading) {
+    const loadingEl = document.getElementById("report-loading");
+    if (!loadingEl) return;
+    loadingEl.classList.toggle("is-visible", isLoading);
+    loadingEl.setAttribute("aria-hidden", String(!isLoading));
+}
+
 function renderSingleStep(step, container, idx) {
     const item = document.createElement("div");
     item.className = "step-item";
@@ -86,10 +93,14 @@ async function runAnalysis() {
     const prompt = promptEl.value.trim();
     if (!prompt) {
         statusEl.textContent = "Please paste your resume text (with GitHub URL).";
+        setReportLoading(false);
         return;
     }
 
     statusEl.textContent = "Starting multi-agent analysis...";
+    setReportLoading(true);
+    finalEl.classList.remove("report-ready");
+    finalEl.classList.add("report-pending");
     finalEl.innerText = "";
     stepsEl.innerHTML = "";
 
@@ -102,6 +113,7 @@ async function runAnalysis() {
 
         if (!resp.ok) {
             statusEl.textContent = "Server error: " + resp.status;
+            setReportLoading(false);
             return;
         }
 
@@ -109,6 +121,7 @@ async function runAnalysis() {
         const decoder = new TextDecoder("utf-8");
         let buffer = "";
         let stepCount = 0;
+        let hasTerminalEvent = false;
 
         while (true) {
             const { value, done } = await reader.read();
@@ -130,10 +143,17 @@ async function runAnalysis() {
                             statusEl.textContent = `Running... (Step ${stepCount} completed)`;
                             stepsEl.scrollTop = stepsEl.scrollHeight;
                         } else if (data.type === "done") {
+                            hasTerminalEvent = true;
                             statusEl.textContent = "Analysis complete.";
+                            setReportLoading(false);
+                            finalEl.classList.remove("report-pending");
+                            finalEl.classList.add("report-ready");
                             typeFinalResponse(data.response, finalEl);
                         } else if (data.type === "error") {
+                            hasTerminalEvent = true;
                             statusEl.textContent = "Error: " + data.message;
+                            setReportLoading(false);
+                            finalEl.classList.remove("report-pending");
                         }
                     } catch (e) {
                         console.error("[DEBUG] Parse error on stream chunk:", e);
@@ -141,9 +161,16 @@ async function runAnalysis() {
                 }
             }
         }
+
+        if (!hasTerminalEvent) {
+            setReportLoading(false);
+            finalEl.classList.remove("report-pending");
+        }
     } catch (err) {
         console.error("[DEBUG] Error:", err);
         statusEl.textContent = "Failed to communicate with server.";
+        setReportLoading(false);
+        finalEl.classList.remove("report-pending");
     }
 }
 
