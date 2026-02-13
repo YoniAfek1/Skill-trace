@@ -1,4 +1,4 @@
-console.log("[DEBUG] static.script: loaded v7.0 (Brand + Streaming)");
+console.log("[DEBUG] static.script: loaded v9.0 (Live Stream + JSON API)");
 
 function escapeHtml(unsafe) {
     if (!unsafe) return "";
@@ -96,7 +96,7 @@ function renderSingleStep(step, container, idx) {
 }
 
 async function runAnalysis() {
-    console.log("[DEBUG] runAnalysis: start streaming");
+    console.log("[DEBUG] runAnalysis: start request");
 
     const promptEl = document.getElementById("prompt");
     const statusEl = document.getElementById("status");
@@ -105,7 +105,7 @@ async function runAnalysis() {
 
     const prompt = promptEl.value.trim();
     if (!prompt) {
-        statusEl.textContent = "Please paste your resume text (with GitHub URL).";
+        statusEl.textContent = "Paste the candidate’s resume text here, including a GitHub URL.";
         setReportLoading(false);
         return;
     }
@@ -118,15 +118,25 @@ async function runAnalysis() {
     stepsEl.innerHTML = "";
 
     try {
-        const resp = await fetch("/api/execute", {
+        const resp = await fetch("/api/execute/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt }),
         });
 
         if (!resp.ok) {
-            statusEl.textContent = "Server error: " + resp.status;
+            let errorMsg = "Server error: " + resp.status;
+            try {
+                const errData = await resp.json();
+                if (errData && typeof errData.error === "string" && errData.error.trim()) {
+                    errorMsg = "Error: " + errData.error;
+                }
+            } catch (_) {
+                // Keep fallback status message if body is not JSON.
+            }
+            statusEl.textContent = errorMsg;
             setReportLoading(false);
+            finalEl.classList.remove("report-pending");
             return;
         }
 
@@ -142,40 +152,40 @@ async function runAnalysis() {
 
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n\n");
-            buffer = lines.pop();
+            buffer = lines.pop() || "";
 
             for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                    const dataStr = line.substring(6);
-                    try {
-                        const data = JSON.parse(dataStr);
+                if (!line.startsWith("data: ")) continue;
+                const dataStr = line.substring(6);
+                try {
+                    const data = JSON.parse(dataStr);
 
-                        if (data.type === "step") {
-                            stepCount++;
-                            renderSingleStep(data.step, stepsEl, stepCount);
-                            statusEl.textContent = `Running... (Step ${stepCount} completed)`;
-                            stepsEl.scrollTop = stepsEl.scrollHeight;
-                        } else if (data.type === "done") {
-                            hasTerminalEvent = true;
-                            statusEl.textContent = "Analysis complete.";
-                            setReportLoading(false);
-                            finalEl.classList.remove("report-pending");
-                            finalEl.classList.add("report-ready");
-                            typeFinalResponse(data.response, finalEl);
-                        } else if (data.type === "error") {
-                            hasTerminalEvent = true;
-                            statusEl.textContent = "Error: " + data.message;
-                            setReportLoading(false);
-                            finalEl.classList.remove("report-pending");
-                        }
-                    } catch (e) {
-                        console.error("[DEBUG] Parse error on stream chunk:", e);
+                    if (data.type === "step") {
+                        stepCount++;
+                        renderSingleStep(data.step, stepsEl, stepCount);
+                        statusEl.textContent = `Running... (Step ${stepCount} completed)`;
+                        stepsEl.scrollTop = stepsEl.scrollHeight;
+                    } else if (data.type === "done") {
+                        hasTerminalEvent = true;
+                        statusEl.textContent = `Analysis complete. (${stepCount} steps)`;
+                        setReportLoading(false);
+                        finalEl.classList.remove("report-pending");
+                        finalEl.classList.add("report-ready");
+                        typeFinalResponse(data.response || "", finalEl);
+                    } else if (data.type === "error") {
+                        hasTerminalEvent = true;
+                        statusEl.textContent = "Error: " + (data.message || "Unknown error");
+                        setReportLoading(false);
+                        finalEl.classList.remove("report-pending");
                     }
+                } catch (e) {
+                    console.error("[DEBUG] Parse error on stream chunk:", e);
                 }
             }
         }
 
         if (!hasTerminalEvent) {
+            statusEl.textContent = "Stream ended unexpectedly.";
             setReportLoading(false);
             finalEl.classList.remove("report-pending");
         }
