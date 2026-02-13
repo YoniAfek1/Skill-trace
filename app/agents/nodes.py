@@ -102,7 +102,10 @@ def input_parser_node(state: AgentState) -> AgentState:
     steps = state.get("steps", [])
     steps.append({
         "module": "Input Parser",
-        "prompt": "Deterministic URL extraction (no LLM call).",
+        "prompt": {
+            "method": "deterministic_url_extraction",
+            "llm_call": False
+        },
         "response": {
             "github_url": url,
             "status": "found" if url else "not_found"
