@@ -71,8 +71,8 @@ class StepModel(BaseModel):
     """
 
     module: str
-    prompt: Any
-    response: Any
+    prompt: Dict[str, Any]
+    response: Dict[str, Any]
 
 
 class ExecuteResponse(BaseModel):
@@ -87,7 +87,7 @@ class ExecuteResponse(BaseModel):
 
     status: str
     error: Optional[str]
-    response: str
+    response: Optional[str]
     steps: List[StepModel]
 
 

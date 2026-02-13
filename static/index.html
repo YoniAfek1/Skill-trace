@@ -2,14 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Multi-Agent Data Science Resume Analyzer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill-Trace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
     <div class="app-container">
       <header>
-        <h1>Multi-Agent Data Science Resume Analyzer</h1>
-        <p>Supervisor → Screening Agent → Git Plan-and-Execute Agent</p>
+        <div class="brand-wrap">
+          <div class="brand-logo" id="brand-logo" aria-hidden="true">
+            <span class="orbit orbit-1"><span class="orbit-dot"></span></span>
+            <span class="orbit orbit-2"><span class="orbit-dot"></span></span>
+            <span class="orbit orbit-3"><span class="orbit-dot"></span></span>
+            <span class="brand-core"></span>
+          </div>
+          <div class="brand-text">
+            <h1>SKILL-TRACE</h1>
+            <p>Bridging the gap between keywords and competency</p>
+          </div>
+        </div>
       </header>
 
       <main>
@@ -17,19 +34,28 @@
           <h2>Resume &amp; GitHub URL</h2>
           <textarea
             id="prompt"
-            placeholder="Paste your resume here, including your GitHub URL..."
+            placeholder="Paste the candidate’s resume text here, including a GitHub URL..."
           ></textarea>
-          <button id="run-btn">Run Analysis</button>
+          <button id="run-btn">Run Agent</button>
           <div id="status" class="status"></div>
         </section>
 
         <section class="output-section">
-          <h2>Final Response</h2>
-          <pre id="final-response" class="code-block"></pre>
+          <div class="section-head">
+            <h2>Competency Report</h2>
+          </div>
+          <div class="report-frame">
+            <div id="report-loading" class="report-loading" aria-live="polite" aria-hidden="true">
+              <span class="report-pulse-dot" aria-hidden="true"></span>
+              <span class="report-loading-text">Generating report...</span>
+              <span class="report-loading-hint">Tip: Watch Agent Steps below as analysis runs.</span>
+            </div>
+            <pre id="final-response" class="code-block"></pre>
+          </div>
         </section>
 
         <section class="steps-section">
-          <h2>Agent Steps</h2>
+          <h2>Agent Steps (Full Trace)</h2>
           <div id="steps-container"></div>
         </section>
       </main>
@@ -42,7 +68,6 @@
       </footer>
     </div>
 
-    <script src="/static/script.js?v=stream_v1"></script>
+    <script src="/static/script.js?v=v9_stream_1"></script>
   </body>
 </html>
-

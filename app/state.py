@@ -12,8 +12,8 @@ print("[DEBUG] app.state: Module import start")
 
 class StepDict(TypedDict):
     module: str
-    prompt: str
-    response: str
+    prompt: Dict[str, Any]
+    response: Dict[str, Any]
 
 
 class AgentState(TypedDict, total=False):

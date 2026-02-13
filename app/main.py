@@ -4,13 +4,12 @@ This module wires together the LangGraph workflow with HTTP endpoints consumed
 by the front-end UI and any external clients. It also exposes static assets for
 the single-page interface.
 """
-import json 
-from fastapi.responses import FileResponse, StreamingResponse # ודא ש-StreamingResponse נוסף
+import json
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from typing import Any, Dict
+from typing import Any, Dict, List
 import os
 
 from app.models import (
@@ -40,6 +39,28 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 graph_app = build_graph()
+
+
+def _normalize_steps(raw_steps: List[Dict[str, Any]]) -> List[StepModel]:
+    normalized_steps: List[StepModel] = []
+    for raw_step in raw_steps:
+        module_name = str(raw_step.get("module", "Unknown Module"))
+        prompt_payload = raw_step.get("prompt", {})
+        response_payload = raw_step.get("response", {})
+
+        if not isinstance(prompt_payload, dict):
+            prompt_payload = {"value": str(prompt_payload)}
+        if not isinstance(response_payload, dict):
+            response_payload = {"value": str(response_payload)}
+
+        normalized_steps.append(
+            StepModel(
+                module=module_name,
+                prompt=prompt_payload,
+                response=response_payload,
+            )
+        )
+    return normalized_steps
 
 
 @app.get("/api/team_info", response_model=TeamInfo)
@@ -151,40 +172,77 @@ def get_model_architecture() -> FileResponse:
 
 
 # --- Endpoint D: Execute (Main) ---
-@app.post("/api/execute")
-def execute(request: ExecuteRequest):
-    """
-    Run the multi-agent workflow based on the provided resume text/URL.
-    Streams the steps as they are executed using Server-Sent Events (SSE).
-    """
+@app.post("/api/execute", response_model=ExecuteResponse)
+def execute(request: ExecuteRequest) -> ExecuteResponse:
+    """Run the multi-agent workflow and return final response with full trace."""
+    initial_state: AgentState = {
+        "resume_text": request.prompt,
+        "steps": [],
+        "git_iteration_count": 0,
+        "visited_repos": [],
+    }
+
+    try:
+        final_state = graph_app.invoke(initial_state)
+
+        raw_steps: List[Dict[str, Any]] = final_state.get("steps", []) or []
+        normalized_steps = _normalize_steps(raw_steps)
+
+        final_text = str(final_state.get("final_analysis", "")).strip()
+        if not final_text:
+            final_text = "Analysis completed, but no final text was generated."
+
+        return ExecuteResponse(
+            status="ok",
+            error=None,
+            response=final_text,
+            steps=normalized_steps,
+        )
+    except Exception as exc:
+        return ExecuteResponse(
+            status="error",
+            error=f"Execution failed: {str(exc)}",
+            response=None,
+            steps=[],
+        )
+
+
+@app.post("/api/execute/stream")
+def execute_stream(request: ExecuteRequest) -> StreamingResponse:
+    """Run the workflow and stream step trace events in real time."""
+
     def event_generator():
         initial_state: AgentState = {
             "resume_text": request.prompt,
             "steps": [],
             "git_iteration_count": 0,
-            "visited_repos": []
+            "visited_repos": [],
         }
+
+        emitted_steps_count = 0
         final_text = ""
-        
+
         try:
             for event in graph_app.stream(initial_state):
-                for node_name, state_update in event.items():
-                    
+                for _, state_update in event.items():
                     if "steps" in state_update and state_update["steps"]:
-                        latest_step = state_update["steps"][-1] 
-                        yield f"data: {json.dumps({'type': 'step', 'step': latest_step})}\n\n"
-                    
+                        all_steps = state_update["steps"]
+                        new_steps = all_steps[emitted_steps_count:]
+                        normalized_new = _normalize_steps(new_steps)
+                        for step in normalized_new:
+                            yield f"data: {json.dumps({'type': 'step', 'step': step.model_dump()})}\n\n"
+                        emitted_steps_count = len(all_steps)
+
                     if "final_analysis" in state_update:
                         raw = state_update["final_analysis"]
                         final_text = str(raw).strip() if raw else ""
 
             if not final_text:
                 final_text = "Analysis completed, but no final text was generated."
-            
+
             yield f"data: {json.dumps({'type': 'done', 'response': final_text})}\n\n"
-            
-        except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -195,3 +253,4 @@ def index() -> FileResponse:
 
 
 print("[DEBUG] app.main: Module import end.")
+
