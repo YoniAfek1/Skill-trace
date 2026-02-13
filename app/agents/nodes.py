@@ -452,6 +452,7 @@ def final_analysis_node(state: AgentState) -> AgentState:
 
         user_content = (
             f"Screening Feedback:\n{screen_feedback}\n\n"
+            f"Technical Analysis:\n{tech_analysis}"
         )
 
     else:
