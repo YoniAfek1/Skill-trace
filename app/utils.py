@@ -11,8 +11,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 import re
-from typing import Optional
+from typing import Dict, Optional
 import requests
+from datetime import datetime, timezone
 
 print("[DEBUG] app.utils: Module import start")
 
@@ -169,6 +170,34 @@ def get_llm_api_key() -> str:
     return key
 
 
+def github_request_headers() -> Dict[str, str]:
+    """Build headers for GitHub API calls, using token auth when available."""
+    headers: Dict[str, str] = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "skill-trace-resume-analyzer",
+    }
+    token = os.getenv("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def log_github_rate_limit(resp: requests.Response, label: str) -> None:
+    """Print GitHub rate-limit counters from an API response."""
+    limit = resp.headers.get("X-RateLimit-Limit", "?")
+    remaining = resp.headers.get("X-RateLimit-Remaining", "?")
+    reset_raw = resp.headers.get("X-RateLimit-Reset")
+    reset_text = "?"
+    if reset_raw and reset_raw.isdigit():
+        reset_ts = datetime.fromtimestamp(int(reset_raw), tz=timezone.utc)
+        reset_text = reset_ts.strftime("%Y-%m-%d %H:%M:%S UTC")
+    print(
+        f"[DEBUG] GitHub rate limit ({label}): "
+        f"limit={limit}, remaining={remaining}, reset={reset_text}"
+    )
+
+
 def extract_github_url(text: str) -> Optional[str]:
     """Extract a GitHub profile or repository URL from a free-text string.
 
@@ -208,7 +237,8 @@ def fetch_user_public_repos(username: str) -> str:
     print(f"[DEBUG] fetch_user_public_repos: fetching for {username}")
     api_url = f"https://api.github.com/users/{username}/repos?sort=updated&per_page=10"
     try:
-        resp = requests.get(api_url, timeout=10)
+        resp = requests.get(api_url, headers=github_request_headers(), timeout=10)
+        log_github_rate_limit(resp, "fetch_user_public_repos")
         if resp.status_code != 200:
             return f"Error fetching repos: {resp.status_code}"
 
