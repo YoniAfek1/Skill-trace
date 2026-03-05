@@ -53,16 +53,11 @@ class ExecuteRequest(BaseModel):
 
     Attributes:
         prompt: Full resume text, optionally containing a GitHub profile URL.
-        job_role: The selected job role to evaluate the candidate against.
     """
 
     prompt: str = Field(
         ...,
         description="Resume text (may also contain GitHub URL)",
-    )
-    job_role: str = Field(
-        default="AI Engineer",
-        description="Job role to evaluate candidate against",
     )
 
 
