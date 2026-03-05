@@ -34,9 +34,15 @@
       <main>
         <section class="input-section">
           <h2>Resume &amp; GitHub URL</h2>
+          <div class="job-role-selector">
+            <label for="job-role">Select Job Role:</label>
+            <select id="job-role" name="job-role">
+              <option value="AI Engineer">AI Engineer</option>
+            </select>
+          </div>
           <textarea
             id="prompt"
-            placeholder="Paste the candidate’s resume text here, including a GitHub URL..."
+            placeholder="Paste the candidate's resume text here, including a GitHub URL..."
           ></textarea>
           <button id="run-btn">Run Agent</button>
           <div id="status" class="status"></div>

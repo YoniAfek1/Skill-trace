@@ -22,10 +22,11 @@ from app.models import (
 )
 from app.state import AgentState
 from app.agents.graph import build_graph
+from app.utils import JOB_DESCRIPTIONS
 
 print("[DEBUG] app.main: Module import start")
 
-app = FastAPI(title="Multi-Agent Data Science Resume Analyzer")
+app = FastAPI(title="Multi-Agent Technical Resume Analyzer")
 
 app.add_middleware(
     CORSMiddleware,
@@ -87,6 +88,19 @@ def get_team_info() -> TeamInfo:
     return info
 
 
+@app.get("/api/job_roles")
+def get_job_roles() -> Dict[str, Any]:
+    """Return available job roles for candidate evaluation.
+
+    Returns:
+        A dictionary with job role names as keys.
+    """
+    print("[DEBUG] get_job_roles: start")
+    roles = list(JOB_DESCRIPTIONS.keys())
+    print(f"[DEBUG] get_job_roles: returning {len(roles)} roles")
+    return {"roles": roles}
+
+
 @app.get("/api/agent_info", response_model=AgentInfo)
 def get_agent_info() -> AgentInfo:
     """Describe the multi-agent system and its prompting strategy.
@@ -98,9 +112,9 @@ def get_agent_info() -> AgentInfo:
     print("[DEBUG] get_agent_info: start")
     
     info = AgentInfo(
-        description="A multi-agent system that evaluates Data Science candidates by analyzing their Resume text and performing a deep-dive technical audit of their GitHub repositories.",
+        description="A multi-agent system that evaluates technical candidates by analyzing their Resume text and performing a deep-dive technical audit of their GitHub repositories.",
         
-        purpose="To automate the screening process for Data Scientist roles, specifically verifying technical claims made in resumes against actual code quality and project relevance found in public repositories.",
+        purpose="To automate the screening process for various technical roles, verifying technical claims made in resumes against actual code quality and project relevance found in public repositories.",
         
         prompt_template={
             "template": "Here is the candidate's resume text: {resume_text}. The text includes a link to their GitHub profile: {github_url}"
@@ -177,6 +191,7 @@ def execute(request: ExecuteRequest) -> ExecuteResponse:
     """Run the multi-agent workflow and return final response with full trace."""
     initial_state: AgentState = {
         "resume_text": request.prompt,
+        "job_role": request.job_role,
         "steps": [],
         "git_iteration_count": 0,
         "visited_repos": [],
@@ -214,6 +229,7 @@ def execute_stream(request: ExecuteRequest) -> StreamingResponse:
     def event_generator():
         initial_state: AgentState = {
             "resume_text": request.prompt,
+            "job_role": request.job_role,
             "steps": [],
             "git_iteration_count": 0,
             "visited_repos": [],

@@ -95,20 +95,46 @@ function renderSingleStep(step, container, idx) {
     container.appendChild(item);
 }
 
+async function loadJobRoles() {
+    try {
+        const resp = await fetch("/api/job_roles");
+        if (!resp.ok) {
+            console.error("[DEBUG] Failed to load job roles");
+            return;
+        }
+        const data = await resp.json();
+        const jobRoleEl = document.getElementById("job-role");
+        if (!jobRoleEl || !data.roles || !Array.isArray(data.roles)) return;
+        
+        jobRoleEl.innerHTML = "";
+        data.roles.forEach(role => {
+            const option = document.createElement("option");
+            option.value = role;
+            option.textContent = role;
+            jobRoleEl.appendChild(option);
+        });
+    } catch (err) {
+        console.error("[DEBUG] Error loading job roles:", err);
+    }
+}
+
 async function runAnalysis() {
     console.log("[DEBUG] runAnalysis: start request");
 
     const promptEl = document.getElementById("prompt");
+    const jobRoleEl = document.getElementById("job-role");
     const statusEl = document.getElementById("status");
     const finalEl = document.getElementById("final-response");
     const stepsEl = document.getElementById("steps-container");
 
     const prompt = promptEl.value.trim();
     if (!prompt) {
-        statusEl.textContent = "Paste the candidate’s resume text here, including a GitHub URL.";
+        statusEl.textContent = "Paste the candidate's resume text here, including a GitHub URL.";
         setReportLoading(false);
         return;
     }
+
+    const jobRole = jobRoleEl ? jobRoleEl.value : "AI Engineer";
 
     statusEl.textContent = "Starting multi-agent analysis...";
     setReportLoading(true);
@@ -121,7 +147,7 @@ async function runAnalysis() {
         const resp = await fetch("/api/execute/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt }),
+            body: JSON.stringify({ prompt, job_role: jobRole }),
         });
 
         if (!resp.ok) {
@@ -200,6 +226,9 @@ async function runAnalysis() {
 document.addEventListener("DOMContentLoaded", () => {
     const btn = document.getElementById("run-btn");
     if (btn) btn.addEventListener("click", runAnalysis);
+
+    // Load available job roles
+    loadJobRoles();
 
     const logo = document.getElementById("brand-logo");
     if (!logo) return;

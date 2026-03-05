@@ -18,6 +18,7 @@ class StepDict(TypedDict):
 
 class AgentState(TypedDict, total=False):
     resume_text: str
+    job_role: str  # Selected job role
     github_url: Optional[str]       
     github_username: Optional[str]  
 

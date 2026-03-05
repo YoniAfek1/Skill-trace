@@ -17,7 +17,8 @@ import requests
 print("[DEBUG] app.utils: Module import start")
 
 
-JOB_DESCRIPTION = """
+JOB_DESCRIPTIONS = {
+    "AI Engineer": """
 Requirements:
 * BSc or MSc in Computer Science, Electrical Engineering, or a related field
 * 2+ years of experience in software engineering and applied AI (or equivalent)
@@ -35,7 +36,117 @@ Domain-Specific Experience (One or More):
    * Strong background in computer vision and deep learning
    * Hands-on experience with detection, segmentation, and tracking models
    * Experience with video pipelines and real-time or near-real-time systems
+""",
+    
+    "Data Analyst": """
+Requirements:
+* BSc in Industrial Engineering, Statistics, Economics, Mathematics, or related field
+* 2-4 years of hands-on experience as a Data Analyst in a fast-paced environment
+* Strong SQL skills - writing complex queries, optimizing performance
+* Proficiency in Python (pandas, numpy) or R for data manipulation and analysis
+* Experience with BI tools (Tableau, Looker, Power BI, or similar)
+* Solid understanding of statistical methods and A/B testing
+* Ability to communicate insights clearly to both technical and business stakeholders
+
+Advantages:
+* Military experience in intelligence/data units (8200, Mamram, or similar)
+* Experience in B2B SaaS or fast-growing startups
+* Knowledge of ETL processes and data pipelines
+* Familiarity with cloud platforms (AWS, GCP, Azure)
+* Experience building dashboards and self-service analytics solutions
+* Background in product analytics or growth analytics
+""",
+    
+    "Product Manager": """
+Requirements:
+* BSc in Computer Science, Engineering, or relevant field (or equivalent experience)
+* 3-5 years of product management experience in tech companies
+* Proven track record of launching successful products from 0 to 1
+* Strong analytical skills - comfortable with data, metrics, and KPIs
+* Experience working closely with engineering, design, and data teams
+* Excellent communication skills in Hebrew and English
+* Ability to define product vision, strategy, and roadmap
+* Deep understanding of user needs and market dynamics
+
+Advantages:
+* Experience in B2B enterprise products or developer tools
+* Background in technology (engineer-turned-PM)
+* Military service in technological units (Talpiot, 8200, or similar)
+* Experience with Agile/Scrum methodologies
+* Track record in fast-paced startup environment (pre-seed to Series B)
+* Strong stakeholder management skills across all levels
+* Experience with product-led growth strategies
+""",
+    
+    "Software Engineer": """
+Requirements:
+* BSc in Computer Science, Software Engineering, or equivalent practical experience
+* 3+ years of hands-on software development experience
+* Strong proficiency in at least one modern language (Python, Java, Go, TypeScript)
+* Experience with cloud platforms and microservices architecture
+* Solid understanding of data structures, algorithms, and design patterns
+* Familiarity with CI/CD practices and modern development workflows
+* Strong problem-solving skills and ability to work independently
+* Experience with both backend and some frontend development
+
+Advantages:
+* Military service in elite technological units (8200, Mamram, C4I)
+* Experience building and scaling distributed systems
+* Contributions to open-source projects
+* Startup experience or fast-paced development environments
+* Knowledge of Kubernetes, Docker, and container orchestration
+* Experience with modern frameworks (React, Node.js, FastAPI, Spring Boot)
+* Understanding of security best practices and secure coding
+* Experience mentoring junior developers
+""",
+    
+    "Solutions Architect": """
+Requirements:
+* BSc/MSc in Computer Science, Engineering, or equivalent practical experience
+* 5+ years of experience in software development, systems architecture, or technical consulting
+* Deep understanding of cloud architectures (AWS, Azure, or GCP)
+* Strong knowledge of distributed systems, microservices, and API design
+* Experience designing enterprise-grade solutions for complex technical challenges
+* Proven ability to communicate technical concepts to both technical and non-technical audiences
+* Hands-on experience with infrastructure-as-code (Terraform, CloudFormation)
+* Strong customer-facing skills and ability to lead technical discussions
+
+Advantages:
+* Military background in system architecture or technological leadership roles
+* Experience with security architecture and compliance requirements
+* Certifications (AWS Solutions Architect, Azure Architect, or similar)
+* Track record working with Fortune 500 or large enterprises
+* Experience in pre-sales or post-sales technical roles
+* Knowledge of data architecture and big data technologies
+* Background in DevOps, SRE, or platform engineering
+* Experience with multi-cloud and hybrid cloud architectures
+""",
+    
+    "Frontend Developer": """
+Requirements:
+* BSc in Computer Science, Software Engineering, or equivalent practical experience
+* 2-4 years of hands-on frontend development experience
+* Strong proficiency in modern JavaScript/TypeScript
+* Expert-level knowledge of React or Vue.js (React strongly preferred)
+* Solid understanding of HTML5, CSS3, and responsive design principles
+* Experience with state management (Redux, Zustand, or similar)
+* Familiarity with modern build tools (Vite, Webpack) and version control (Git)
+* Strong eye for design and UX, ability to implement pixel-perfect interfaces
+
+Advantages:
+* Military service in technological units (8200, Mamram, C4I, or similar)
+* Experience in fast-paced startup environment or product companies
+* Knowledge of Next.js, server-side rendering, and modern React patterns
+* Experience with design systems and component libraries (Tailwind, MUI, Ant Design)
+* Understanding of web performance optimization and accessibility (a11y)
+* Familiarity with backend technologies and RESTful/GraphQL APIs
+* Experience with testing frameworks (Jest, Cypress, Playwright)
+* Contributions to open-source projects or active GitHub profile
 """
+}
+
+# Keep backward compatibility with existing code
+JOB_DESCRIPTION = JOB_DESCRIPTIONS["AI Engineer"]
 
 
 def get_llm_api_key() -> str:

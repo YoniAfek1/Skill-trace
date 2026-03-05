@@ -8,13 +8,53 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from app.state import AgentState
 from app.utils import (
-    JOB_DESCRIPTION,
+    JOB_DESCRIPTIONS,
     extract_github_url,
     get_llm_api_key,
     fetch_user_public_repos,
 )
 
+MAX_ITERATIONS = 5
+
+MAX_CODE_FILES = 6
+
+# Approximate token sampling (1 token ≈ 4 characters)
+TOKENS_PER_FILE = 400
+CHARS_PER_FILE = TOKENS_PER_FILE * 5  # ~1500 chars
+
+
+
 print("[DEBUG] app.agents.nodes: Module import start")
+
+def _sample_file_content(text: str, max_chars: int = CHARS_PER_FILE) -> str:
+    """Sample ~max_chars from a file, taking from beginning, middle, and end.
+    
+    This gives a more representative view than just reading the first N chars.
+    """
+    if len(text) <= max_chars:
+        return text
+    
+    # Strategy: Take 40% from start, 30% from middle, 30% from end
+    chunk_start = int(max_chars * 0.4)
+    chunk_mid = int(max_chars * 0.3)
+    chunk_end = int(max_chars * 0.3)
+    
+    start = text[:chunk_start]
+    
+    mid_pos = len(text) // 2 - chunk_mid // 2
+    middle = text[mid_pos:mid_pos + chunk_mid]
+    
+    end = text[-chunk_end:]
+    
+    return f"{start}\n\n[... middle section ...]\n\n{middle}\n\n[... end section ...]\n\n{end}"
+
+print("[DEBUG] app.agents.nodes: Module import start")
+
+
+def _get_job_description(state: AgentState) -> str:
+    """Get the job description based on the selected job role in state."""
+    job_role = state.get("job_role", "AI Engineer")
+    return JOB_DESCRIPTIONS.get(job_role, JOB_DESCRIPTIONS["AI Engineer"])
 
 
 def _build_llm() -> ChatOpenAI:
@@ -56,7 +96,15 @@ def _fetch_repo_context(url: str) -> str:
         readme_content = ""
         requirements_content = ""
         code_content = ""
-        python_files_count = 0
+        code_files_count = 0
+        
+        # Top 15 most common programming language extensions
+        code_extensions = (
+            '.py', '.js', '.jsx', '.ts', '.tsx',     # Python, JavaScript/TypeScript
+            '.java', '.c', '.cpp', '.h', '.hpp',     # Java, C/C++
+            '.cs', '.go', '.rs', '.rb', '.php',      # C#, Go, Rust, Ruby, PHP
+            '.swift', '.kt', '.scala', '.r', '.sh'   # Swift, Kotlin, Scala, R, Shell
+        )
 
         for file in files_list:
             name = file.get("name", "")
@@ -66,22 +114,23 @@ def _fetch_repo_context(url: str) -> str:
             if name.lower().startswith("readme") and download_url:
                 try:
                     r = requests.get(download_url, timeout=5)
-                    readme_content = f"\n[README summary]:\n{r.text[:10000]}\n"
+                    readme_content = f"\n[README summary]:\n{r.text[:3000]}\n"
                 except:
                     pass
 
-            elif name.lower() == "requirements.txt" and download_url:
+            elif name.lower() in ("requirements.txt", "package.json", "pom.xml", "build.gradle") and download_url:
                 try:
                     r = requests.get(download_url, timeout=5)
-                    requirements_content = f"\n[Libs]:\n{r.text[:3000]}\n"
+                    requirements_content = f"\n[Dependencies: {name}]:\n{r.text[:3000]}\n"
                 except:
                     pass
 
-            elif name.endswith(".py") and download_url and python_files_count < 2:
+            elif name.lower().endswith(code_extensions) and download_url and code_files_count < MAX_CODE_FILES:
                 try:
                     r = requests.get(download_url, timeout=5)
-                    code_content += f"\n[Code: {name}]:\n{r.text[:10000]}\n"
-                    python_files_count += 1
+                    sampled = _sample_file_content(r.text, max_chars=CHARS_PER_FILE)
+                    code_content += f"\n[Code: {name}]:\n{sampled}\n"
+                    code_files_count += 1
                 except:
                     pass
 
@@ -119,9 +168,11 @@ def screening_agent_node(state: AgentState) -> AgentState:
     print("[DEBUG] screening_agent_node: start")
     llm = _build_llm()
     resume = state.get("resume_text", "")
+    job_description = _get_job_description(state)
+    job_role = state.get("job_role", "AI Engineer")
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a strict resume screener for a Data Science role.\n"
+        ("system", f"You are a strict resume screener for a {job_role} role.\n"
                    "Return ONLY valid JSON (no markdown, no extra text) with exactly these keys:\n"
                    "{{\n"
                    "  \"decision\": \"YES\" or \"NO\",\n"
@@ -136,7 +187,7 @@ def screening_agent_node(state: AgentState) -> AgentState:
         ("user", "Job Description:\n{jd}\n\nResume:\n{resume}")
     ])
 
-    formatted = prompt.format_messages(jd=JOB_DESCRIPTION, resume=resume)
+    formatted = prompt.format_messages(jd=job_description, resume=resume)
     result = llm.invoke(formatted)
 
     try:
@@ -193,6 +244,7 @@ def git_planner_node(state: AgentState) -> AgentState:
     prev_analysis = state.get("technical_analysis", "None yet.")
     visited = state.get("visited_repos", [])
     visited_str = ", ".join(visited) if visited else "None"
+    job_description = _get_job_description(state)
 
     llm = _build_llm()
 
@@ -201,7 +253,7 @@ def git_planner_node(state: AgentState) -> AgentState:
         ("system", "You are a Tech Lead planning the next repository audit.\n"
                    "Goal: maximize signal about candidate fit to the Job Description, by creating a plan with direct instructions.\n"
                    "Select exactly ONE repo from 'All Repos' that is NOT in 'Already Visited Repos'.\n"
-                   "Prefer repos with concrete ML/data-science implementation evidence (not only notebooks or vague descriptions).\n"
+                   "Prefer repos with concrete technical implementation evidence (not only documentation or trivial examples).\n"
                    "Output the repo name and the plan (maximum 3 checks) in this plain-text format (no markdown):\n"
                    "REPO: <exact repo name from All Repos>\n"
                    "WHY: <one concise sentence tied to JD fit>\n"
@@ -213,7 +265,7 @@ def git_planner_node(state: AgentState) -> AgentState:
     ])
 
     msg = prompt.format_messages(
-        jd=JOB_DESCRIPTION,
+        jd=job_description,
         repos=repos_summary,
         visited=visited_str,
         prev=prev_analysis
@@ -252,25 +304,18 @@ def git_executor_node(state: AgentState) -> AgentState:
 
     llm = _build_llm()
 
-    extraction_prompt = ChatPromptTemplate.from_messages([
-        ("system", "Extract ONLY the repository name from the plan. Output just the name."),
-        ("user", "Plan: {plan}\n\nRepos List: {repos}")
-    ])
-    extraction_messages = extraction_prompt.format_messages(plan=plan, repos=repo_list_str)
-    extraction_result = llm.invoke(extraction_messages)
-    target_repo_name = extraction_result.content.strip()
+    # Parse repo name from plan (format: "REPO: <repo_name>")
+    target_repo_name = None
+    for line in plan.split('\n'):
+        if line.strip().upper().startswith('REPO:'):
+            target_repo_name = line.split(':', 1)[1].strip()
+            break
+    
+    # Fallback: if parsing fails, use first repo from list
+    if not target_repo_name and repo_list_str:
+        first_repo = repo_list_str.split('\n')[0].strip('- ')
+        target_repo_name = first_repo.split(':')[0].strip() if ':' in first_repo else first_repo
 
-    steps = state.get("steps", [])
-    steps.append({
-        "module": f"{module_name} / Repo Selection",
-        "prompt": {
-            "messages": _messages_to_trace(extraction_messages)
-        },
-        "response": {
-            "raw": str(extraction_result.content),
-            "selected_repo": target_repo_name
-        }
-    })
 
     visited = state.get("visited_repos", [])
     if target_repo_name not in visited:
@@ -279,6 +324,7 @@ def git_executor_node(state: AgentState) -> AgentState:
 
     full_repo_url = f"https://github.com/{username}/{target_repo_name}"
     repo_context = _fetch_repo_context(full_repo_url)
+    job_description = _get_job_description(state)
 
     analysis_prompt = ChatPromptTemplate.from_messages([
         ("system", "You are a senior code reviewer executing a planned repository audit.\n"
@@ -303,7 +349,7 @@ def git_executor_node(state: AgentState) -> AgentState:
     ])
 
     analysis_messages = analysis_prompt.format_messages(
-        jd=JOB_DESCRIPTION,
+        jd=job_description,
         context=repo_context,
         plan=plan
     )
@@ -313,6 +359,7 @@ def git_executor_node(state: AgentState) -> AgentState:
     new_analysis = current_analysis + f"\n\n[Repo: {target_repo_name}]:\n{analysis_res.content}"
     state["technical_analysis"] = new_analysis
 
+    steps = state.get("steps", [])
     steps.append({
         "module": module_name,
         "prompt": {
@@ -340,12 +387,17 @@ def git_replan_node(state: AgentState) -> AgentState:
     # --- Updated Logic ---
 
     # Case 1: Already looped once (count >= 1). Force stop.
-    if count >= 1:
+    if count >= MAX_ITERATIONS:
         decision = "FINISH"
         reasoning = "There is enough data to create a summary."
 
     # Case 2: First time (count == 0). Ask LLM but request leniency.
     else:
+        job_description = _get_job_description(state)
+        repos_summary = state.get("user_repos_metadata", "No repos found.")
+        visited = state.get("visited_repos", [])
+        visited_str = ", ".join(visited) if visited else "None"
+        
         prompt = ChatPromptTemplate.from_messages([
             ("system", "You are a quality gate evaluator deciding whether to continue repository analysis.\n"
                        "Goal: decide if current evidence is sufficient for a reliable final score and recommendation.\n"
@@ -357,13 +409,19 @@ def git_replan_node(state: AgentState) -> AgentState:
                        "Decision rules:\n"
                        "- Choose FINISH if findings already provide enough evidence for strengths, risks, and JD alignment.\n"
                        "- Choose RETRY only when there is a clear evidence gap that likely can be reduced by inspecting a different unvisited repo.\n"
+                       "- Consider the available unvisited repos: if they are unlikely to add material signal, choose FINISH.\n"
                        "- Do NOT choose RETRY for minor uncertainty.\n"
                        "- Be conservative with retries: one additional repo should materially improve confidence.\n"
                        "Reasoning must reference evidence sufficiency, not preference."),
-            ("user", "JD:\n{jd}\n\nCurrent Findings:\n{findings}")
+            ("user", "JD:\n{jd}\n\nAll Repos:\n{repos}\n\nAlready Visited Repos:\n{visited}\n\nCurrent Findings:\n{findings}")
         ])
 
-        replan_messages = prompt.format_messages(jd=JOB_DESCRIPTION, findings=findings)
+        replan_messages = prompt.format_messages(
+            jd=job_description, 
+            repos=repos_summary,
+            visited=visited_str,
+            findings=findings
+        )
         result = llm.invoke(replan_messages)
 
         try:
@@ -382,11 +440,11 @@ def git_replan_node(state: AgentState) -> AgentState:
     state["replan_decision"] = decision
 
     steps = state.get("steps", [])
-    if count >= 1:
+    if count >= MAX_ITERATIONS:
         steps.append({
             "module": module_name,
             "prompt": {
-                "rule": "Forced FINISH because git_iteration_count >= 1"
+                "rule": f"Forced FINISH because git_iteration_count >= {MAX_ITERATIONS}"
             },
             "response": {
                 "decision": decision,

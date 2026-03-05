@@ -36,8 +36,8 @@ graph TD
 
 ## ✨ Key Features
 
-* **Resume Screening:** Automatic evaluation of candidate relevance based on a hard-coded Data Science JD.
-* **Deep Code Analysis:** The agents don't just look at the repo name; they fetch file structures, read `README.md`, check `requirements.txt`, and analyze actual Python code.
+* **Resume Screening:** Automatic evaluation of candidate relevance based on configurable job descriptions for various technical roles.
+* **Deep Code Analysis:** The agents don't just look at the repo name; they fetch file structures, read `README.md`, check dependency files, and analyze actual code across 15+ programming languages.
 * **Self-Correcting Loop:** If the initial analysis is insufficient, the agents "Replan" and visit another repository.
 * **Fail-Safe UI:** A robust Frontend that handles real-time updates and ensures the final report is always displayed.
 
