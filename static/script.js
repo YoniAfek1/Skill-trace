@@ -12,9 +12,31 @@ function escapeHtml(unsafe) {
 
 function formatTracePayload(value) {
     if (value === null || value === undefined) return "";
-    if (typeof value === "string") return value;
+    const normalizeEscapedWhitespace = (text) => text
+        .replace(/\r\n/g, "\n")
+        .replace(/\\r\\n/g, "\n")
+        .replace(/\\n/g, "\n")
+        .replace(/\\t/g, "    ");
+
+    const tryPrettyJsonString = (text) => {
+        const trimmed = text.trim();
+        if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            return text;
+        }
+        try {
+            return JSON.stringify(JSON.parse(trimmed), null, 2);
+        } catch {
+            return text;
+        }
+    };
+
+    if (typeof value === "string") {
+        const normalized = normalizeEscapedWhitespace(value);
+        return tryPrettyJsonString(normalized);
+    }
     try {
-        return JSON.stringify(value, null, 2);
+        const jsonText = JSON.stringify(value, null, 2);
+        return normalizeEscapedWhitespace(jsonText);
     } catch {
         return String(value);
     }
@@ -78,10 +100,10 @@ function renderSingleStep(step, container, idx) {
 
     body.innerHTML = `
         <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Prompt:</strong></div>
-        <pre style="white-space: pre-wrap; background: #1f2937; color: #d1d5db; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #374151;">${escapeHtml(promptText)}</pre>
+        <pre style="white-space: pre-wrap; word-break: break-word; line-height: 1.5; background: #1f2937; color: #d1d5db; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #374151; max-height: 320px; overflow: auto;">${escapeHtml(promptText)}</pre>
 
         <div style="margin-bottom: 5px; color: #9ca3af; font-size: 0.9em;"><strong>Response:</strong></div>
-        <pre style="white-space: pre-wrap; background: #020617; color: #e5e7eb; padding: 10px; border-radius: 6px; border: 1px solid #374151;">${escapeHtml(responseText)}</pre>
+        <pre style="white-space: pre-wrap; word-break: break-word; line-height: 1.5; background: #020617; color: #e5e7eb; padding: 12px; border-radius: 6px; border: 1px solid #374151; max-height: 320px; overflow: auto;">${escapeHtml(responseText)}</pre>
     `;
 
     header.addEventListener("click", () => {
@@ -135,6 +157,7 @@ async function runAnalysis() {
     }
 
     const jobRole = jobRoleEl ? jobRoleEl.value : "AI Engineer";
+    const requestPrompt = `Job Role: ${jobRole}\n\n${prompt}`;
 
     statusEl.textContent = "Starting multi-agent analysis...";
     setReportLoading(true);
@@ -147,7 +170,7 @@ async function runAnalysis() {
         const resp = await fetch("/api/execute/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt, job_role: jobRole }),
+            body: JSON.stringify({ prompt: requestPrompt }),
         });
 
         if (!resp.ok) {
