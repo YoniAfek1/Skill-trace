@@ -12,6 +12,8 @@ from app.utils import (
     extract_github_url,
     get_llm_api_key,
     fetch_user_public_repos,
+    github_request_headers,
+    log_github_rate_limit,
 )
 
 MAX_ITERATIONS = 5
@@ -19,8 +21,8 @@ MAX_ITERATIONS = 5
 MAX_CODE_FILES = 6
 
 # Approximate token sampling (1 token ≈ 4 characters)
-TOKENS_PER_FILE = 400
-CHARS_PER_FILE = TOKENS_PER_FILE * 5  # ~1500 chars
+TOKENS_PER_FILE = 700
+CHARS_PER_FILE = TOKENS_PER_FILE * 5  # ~3500 chars
 
 
 
@@ -86,7 +88,9 @@ def _fetch_repo_context(url: str) -> str:
     api_url = f"https://api.github.com/repos/{owner}/{repo}/contents"
 
     try:
-        resp = requests.get(api_url, timeout=10)
+        headers = github_request_headers()
+        resp = requests.get(api_url, headers=headers, timeout=10)
+        log_github_rate_limit(resp, "_fetch_repo_context")
         if resp.status_code != 200:
             return f"Error: Status {resp.status_code}"
 
@@ -113,23 +117,23 @@ def _fetch_repo_context(url: str) -> str:
 
             if name.lower().startswith("readme") and download_url:
                 try:
-                    r = requests.get(download_url, timeout=5)
+                    r = requests.get(download_url, headers=headers, timeout=10)
                     readme_content = f"\n[README summary]:\n{r.text[:3000]}\n"
                 except:
                     pass
 
             elif name.lower() in ("requirements.txt", "package.json", "pom.xml", "build.gradle") and download_url:
                 try:
-                    r = requests.get(download_url, timeout=5)
+                    r = requests.get(download_url, headers=headers, timeout=10)
                     requirements_content = f"\n[Dependencies: {name}]:\n{r.text[:3000]}\n"
                 except:
                     pass
 
             elif name.lower().endswith(code_extensions) and download_url and code_files_count < MAX_CODE_FILES:
                 try:
-                    r = requests.get(download_url, timeout=5)
+                    r = requests.get(download_url, headers=headers, timeout=10)
                     sampled = _sample_file_content(r.text, max_chars=CHARS_PER_FILE)
-                    code_content += f"\n[Code: {name}]:\n{sampled}\n"
+                    code_content += f"\n[Code Sample: {name}]:\n{sampled}\n"
                     code_files_count += 1
                 except:
                     pass
@@ -330,6 +334,8 @@ def git_executor_node(state: AgentState) -> AgentState:
         ("system", "You are a senior code reviewer executing a planned repository audit.\n"
                    "Primary objective: follow the Planner Instructions and evaluate alignment with the Job Description (JD).\n"
                    "Use ONLY the provided Context and Instructions as evidence.\n"
+                   "Important: Context may include sampled excerpts from files rather than full files.\n"
+                   "When evidence is incomplete due to sampling, explicitly state insufficient evidence.\n"
                    "Do NOT invent files, functions, tests, frameworks, performance results, or behaviors.\n\n"
                    "Execution rules:\n"
                    "1) Execute/check each planner check in order.\n"
