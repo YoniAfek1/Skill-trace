@@ -57,23 +57,28 @@ def _normalize_role_name(value: str) -> str:
 
 
 def _resolve_job_role_and_prompt(prompt: str) -> tuple[str, str]:
-    """Resolve JD from prompt header only; return (role, cleaned_prompt)."""
-    lines = prompt.splitlines()
-    for idx, line in enumerate(lines):
+    """Resolve JD from prompt and strip all inline Job Role lines."""
+    role = "AI Engineer"
+    cleaned_lines: List[str] = []
+    removed_any = False
+
+    for line in prompt.splitlines():
         stripped = line.strip()
-        if not stripped:
-            continue
         match = re.match(r"^job\s*role\s*:\s*(.+)$", stripped, flags=re.IGNORECASE)
         if match:
+            removed_any = True
             parsed_role = _normalize_role_name(match.group(1))
-            if parsed_role:
-                cleaned_lines = lines[:idx] + lines[idx + 1 :]
-                cleaned_prompt = "\n".join(cleaned_lines).strip() or prompt
-                return parsed_role, cleaned_prompt
-        # Only inspect the first non-empty line for an inline role directive.
-        break
+            if parsed_role == "":
+                continue
+            if role == "AI Engineer":
+                role = parsed_role
+            continue
+        cleaned_lines.append(line)
 
-    return "AI Engineer", prompt
+    cleaned_prompt = "\n".join(cleaned_lines).strip()
+    if removed_any:
+        return role, cleaned_prompt
+    return role, prompt
 
 
 def _normalize_steps(raw_steps: List[Dict[str, Any]]) -> List[StepModel]:
@@ -157,7 +162,7 @@ def get_agent_info() -> AgentInfo:
         ),
         prompt_template={
             "template":
-                "Job Role: [one of /api/job_roles]"
+                "Job Role: [one of /api/job_roles]\n"
                 "[candidate resume text, including GitHub URL if available]"
 
         },
