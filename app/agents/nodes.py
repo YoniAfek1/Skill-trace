@@ -118,7 +118,7 @@ def _fetch_repo_context(url: str) -> str:
             if name.lower().startswith("readme") and download_url:
                 try:
                     r = requests.get(download_url, headers=headers, timeout=10)
-                    readme_content = f"\n[README summary]:\n{r.text[:3000]}\n"
+                    readme_content = f"\n[README sample]:\n{r.text[:3000]}\n"
                 except:
                     pass
 
