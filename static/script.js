@@ -157,7 +157,12 @@ async function runAnalysis() {
     }
 
     const jobRole = jobRoleEl ? jobRoleEl.value : "AI Engineer";
-    const requestPrompt = `Job Role: ${jobRole}\n\n${prompt}`;
+    const cleanedPrompt = prompt
+        .split(/\r?\n/)
+        .filter(line => !/^\s*job\s*role\s*:/i.test(line))
+        .join("\n")
+        .trim();
+    const requestPrompt = `Job Role: ${jobRole}\n\n${cleanedPrompt}`;
 
     statusEl.textContent = "Starting multi-agent analysis...";
     setReportLoading(true);
