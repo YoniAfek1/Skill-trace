@@ -77,6 +77,7 @@ pip install -r requirements.txt
 Create a `.env` file in the root directory:
 ```env
 LLM_API_KEY=your_api_key_here
+GITHUB_TOKEN=your_github_token_here
 
 ```
 
@@ -90,3 +91,62 @@ uvicorn app.main:app --reload
 
 6. **Open the App:**
 Navigate to `http://localhost:8000` in your browser.
+
+## 🧪 How to Use the App
+
+### UI flow
+1. Open `http://localhost:8000`.
+2. Select a job role from the dropdown.
+3. Paste the candidate resume text (including a GitHub profile/repo URL if available).
+4. Click **Run Agent**.
+5. Review:
+   - **Competency Report** (final response)
+   - **Agent Steps (Full Trace)** with module, prompt, and response per step
+
+### API usage
+Note (Windows PowerShell): use `curl.exe` (not `curl`) because `curl` is an alias to `Invoke-WebRequest`.
+Line breaks: in the UI, paste normal multiline text; in API JSON payloads, represent new lines as `\n` inside the `prompt` string.
+
+#### 1) Team info
+```bash
+curl.exe http://localhost:8000/api/team_info
+```
+
+#### 2) Agent info
+```bash
+curl.exe http://localhost:8000/api/agent_info
+```
+
+#### 3) Model architecture image
+```bash
+curl.exe -o architecture.png http://localhost:8000/api/model_architecture
+```
+
+#### 4) Execute
+For API tools (Bruno/Postman etc.), see valid JSON prompt templates (use escaped newlines) in:
+- `GET /api/agent_info`
+
+For running from PowerShell:
+```powershell
+$body = @{
+  prompt = @"
+Job Role: <Insert one of /api/job_roles>
+<Paste the full candidate resume text, including GitHub URL>
+"@
+} | ConvertTo-Json -Compress
+
+$response = Invoke-RestMethod -Method Post -Uri "http://localhost:8000/api/execute" -ContentType "application/json" -Body $body
+
+Useful shortcuts to view results:       
+$response.response   # final response only
+$response.steps | ConvertTo-Json -Depth 100 # steps array 
+$response | ConvertTo-Json -Depth 100  # see full response                                                                                                                                                                                                                                                                                                                                                                                                                                      
+
+```
+Notes:
+In raw JSON (Bruno/Postman), new lines must be escaped as `\n`.
+
+In PowerShell here-strings, write real line breaks (do not type literal `\n`).
+
+#### Optional: streaming mode for live step updates (UX purposes)
+`POST /api/execute/stream` streams Server-Sent Events (SSE) for UI progress (`step`, `done`, `error` events).
