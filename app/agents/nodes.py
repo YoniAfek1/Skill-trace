@@ -157,7 +157,7 @@ def input_parser_node(state: AgentState) -> AgentState:
         "module": "Input Parser",
         "prompt": {
             "method": "deterministic_url_extraction",
-            "llm_call": False
+            "llm_call": "false"
         },
         "response": {
             "github_url": url,
