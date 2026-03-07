@@ -163,9 +163,12 @@ def get_agent_info() -> AgentInfo:
         ),
         prompt_template={
             "template":
-                "Job Role: [one of /api/job_roles]\n"
-                "[candidate resume text, including GitHub URL if available]"
-
+                "Input modes:\n"
+                "- API (/api/execute): send JSON where prompt is a single string; represent line breaks with \\n.\n"
+                "- UI: paste the resume normally with regular line breaks (no escaping needed).\n\n"
+                "Required first line of the prompt in API mode:\n"
+                "Job Role: [Insert one of /api/job_roles]\n\n"
+                "[Paste the full candidate resume text, including GitHub URL]\n\n"
         },
         prompt_examples=AGENT_INFO_PROMPT_EXAMPLES,
     )
