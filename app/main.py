@@ -40,7 +40,6 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
 graph_app = build_graph()
 
 
@@ -112,15 +111,15 @@ def get_team_info() -> TeamInfo:
         A `TeamInfo` model with batch identifier, team name, and students.
     """
     print("[DEBUG] get_team_info: start")
-    
+
     students_list = [
         Student(name="Bar Muller", email="bar.muller@campus.technion.ac.il"),
         Student(name="Shani Angel", email="shani.angel@campus.technion.ac.il"),
         Student(name="Jonathan Haber-Afek", email="jonathanh@campus.technion.ac.il")
     ]
-    
+
     info = TeamInfo(
-        group_batch_order_number="batch3_order3", 
+        group_batch_order_number="batch3_order3",
         team_name="Yoni, Shani, and Bar",
         students=students_list
     )
@@ -174,6 +173,8 @@ def get_agent_info() -> AgentInfo:
     )
     print("[DEBUG] get_agent_info: end")
     return info
+
+
 @app.get("/api/model_architecture")
 def get_model_architecture() -> FileResponse:
     """Serve the static PNG that documents the model architecture.
@@ -187,7 +188,7 @@ def get_model_architecture() -> FileResponse:
         # Fallback behaviour if the architecture diagram is missing.
         print("[DEBUG] get_model_architecture: file not found")
         raise HTTPException(status_code=404, detail="architecture.png not found")
-        
+
     print("[DEBUG] get_model_architecture: end")
     return FileResponse(file_path, media_type="image/png")
 
@@ -232,7 +233,8 @@ def execute(request: ExecuteRequest) -> ExecuteResponse:
 
 @app.post("/api/execute/stream")
 def execute_stream(request: ExecuteRequest) -> StreamingResponse:
-    """Run the workflow and stream step trace events in real time."""
+    """Run the workflow and stream step trace events in real time (solely for UX/UI purposes, this has the exact same
+    functionality as api/execute."""
 
     def event_generator():
         resolved_role, cleaned_prompt = _resolve_job_role_and_prompt(request.prompt)
@@ -271,6 +273,7 @@ def execute_stream(request: ExecuteRequest) -> StreamingResponse:
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
+
 @app.get("/")
 def index() -> FileResponse:
     """Serve the main HTML file for the front-end UI."""
@@ -278,5 +281,3 @@ def index() -> FileResponse:
 
 
 print("[DEBUG] app.main: Module import end.")
-
-
