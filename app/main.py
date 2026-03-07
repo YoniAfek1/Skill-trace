@@ -24,6 +24,7 @@ from app.models import (
 from app.state import AgentState
 from app.agents.graph import build_graph
 from app.utils import JOB_DESCRIPTIONS
+from app.agent_info_examples import AGENT_INFO_PROMPT_EXAMPLES
 
 print("[DEBUG] app.main: Module import start")
 
@@ -166,23 +167,7 @@ def get_agent_info() -> AgentInfo:
                 "[candidate resume text, including GitHub URL if available]"
 
         },
-        prompt_examples=[
-            {
-                "prompt": "Job Role: AI Engineer\n\nEducation\nB.Sc, Data Science and Engineering\nTechnion - Israel Institute of Technology, 2021 - 2025\nGPA - 90.\nAchieved Dean's List honors four times.\nRelevant Courses: Probability (100), Statistics (91), Data Structures and Algorithms (86), Deep Learning (91).\n\nTechnion Data Science and Engineering graduate with 2 years of software development experience. Skilled in Python, PyTorch, and Deep Learning methods.\n\nSurgical Computer Vision Project: Surgical tool pose-estimation system that generates synthetic labeled data. GitHub Link.\nRAG Project: An LLM-based assistant using RAG and vector search. GitHub Link.\nTime Series Project: Forecasting electricity consumption with ARIMA, Prophet, and XGBoost. GitHub Link.\n\nhttps://github.com/YoniAfek1",
-                "full_response": (
-                    "Decision: INTERVIEW\n\n"
-                    "Final Score: 80/100\n\n"
-                    "Candidate Summary:\n- ...\n\n"
-                    "Verified Strengths:\n- ...\n\n"
-                    "Risks / Gaps:\n- ...\n\n"
-                    "Interview Focus Areas:\n- ...\n\n"
-                    "Recommendation for HR:\n- ..."
-                ),
-                "steps": [
-                    # TODO
-                ],
-            }
-        ],
+        prompt_examples=AGENT_INFO_PROMPT_EXAMPLES,
     )
     print("[DEBUG] get_agent_info: end")
     return info
