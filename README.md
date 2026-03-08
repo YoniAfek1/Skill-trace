@@ -103,6 +103,79 @@ Navigate to `http://localhost:8000` in your browser.
    - **Competency Report** (final response)
    - **Agent Steps (Full Trace)** with module, prompt, and response per step
 
+Pasteable UI example:
+```text
+MSc Data Science student at Technion
+Analytical MSc student motivated by tackling complex problems in Machine Learning and Natural Language Processing, seeking
+opportunities to contribute to impactful research while further develop technical and analytical skills.
+https://github.com/shaniangel
+EDUCATION
+MSc in Data Science
+Technion - Israel Institute of Technology
+10/2025 - Present,
+BSc in Data Science and Engineering - GPA 88.5
+Technion - Israel Institute of Technology
+10/2021 - 10/2025,
+Machine Learning Deep Learning
+NLP, NLP Seminar, Language,
+Computation and Cognition
+Statistics 1,2
+Project in ML (VLMs) Computer Vision in medicine
+WORK EXPERIENCE
+Data Scientist
+AI Solutions Group, Intel
+06/2025 - Present,
+Design AI-driven solutions for chip validation, leveraging tabular
+modeling alongside LLM-based pipelines.
+Build an end-to-end anomaly detection system, improve existing
+solutions and incorporate LLM-based solutions.
+Analyze and present recent research papers in internal technical
+forums, contributing to architecture decisions and best practices.
+AI Product Analyst
+AI Solutions Group, Intel
+06/2024 - 06/2025,
+Evaluate ML models alongside data science and engineering teams,
+focusing on performance, reliability, and practical deployment
+constraints.
+Partner with customers to scope data-driven, high-value use cases,
+bridging product requirements and technical implementation.
+Project Manager
+Python
+Numpy, Pandas, Sklearn, Pyspark, Pytorch
+SQL Java C
+Excellent Interpersonal skills
+ACADEMIC PROJECTS
+Evaluating Temporal Reasoning in VLMs
+Adapted natural language inference to the visual
+domain to evaluate temporal reasoning and plausibility
+judgments in Vision Language Models.
+Constructed a custom multi-style image dataset and
+benchmarked multiple VLMs to analyze reasoning
+behaviour and systematic biases.
+Retrieval-Augmented Generation (RAG) for
+Terms and Conditions
+Implemented a RAG-based system to enhance
+accessibility of terms and conditions documents.
+Evaluated multiple chunking methods and enhancing
+features.
+CERTIFICATES
+Dean's Excellence Award
+Spring 2025 Semester
+Dean's Excellence Award
+Winter 2024/2025 Semester
+Dean's Excellence Award
+Winter 2023/2024 Semester
+Certificate of Excellence - Intelligence
+Department, IDF
+LANGUAGES
+English (Born and raised in South Africa)
+Native or Bilingual Proficiency
+Hebrew
+Native or Bilingual Proficiency
+INTERESTS
+Fitness Books Travel Foodie
+```
+
 ### API usage
 Note (Windows PowerShell): use `curl.exe` (not `curl`) because `curl` is an alias to `Invoke-WebRequest`.
 Line breaks: in the UI, paste normal multiline text; in API JSON payloads, represent new lines as `\n` inside the `prompt` string.
