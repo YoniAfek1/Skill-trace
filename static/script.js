@@ -157,7 +157,11 @@ async function runAnalysis() {
     }
 
     const jobRole = jobRoleEl ? jobRoleEl.value : "AI Engineer";
-    const cleanedPrompt = prompt
+    // Support users pasting JSON-style escaped text with literal \n.
+    const normalizedPrompt = prompt
+        .replace(/\\r\\n/g, "\n")
+        .replace(/\\n/g, "\n");
+    const cleanedPrompt = normalizedPrompt
         .split(/\r?\n/)
         .filter(line => !/^\s*job\s*role\s*:/i.test(line))
         .join("\n")

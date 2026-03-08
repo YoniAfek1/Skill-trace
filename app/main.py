@@ -58,11 +58,17 @@ def _normalize_role_name(value: str) -> str:
 
 def _resolve_job_role_and_prompt(prompt: str) -> tuple[str, str]:
     """Resolve JD from prompt and strip all inline Job Role lines."""
+    # Accept prompts pasted with JSON-style escaped newlines (literal "\n").
+    normalized_prompt = (
+        (prompt or "")
+        .replace("\\r\\n", "\n")
+        .replace("\\n", "\n")
+    )
     role = "AI Engineer"
     cleaned_lines: List[str] = []
     removed_any = False
 
-    for line in prompt.splitlines():
+    for line in normalized_prompt.splitlines():
         stripped = line.strip()
         match = re.match(r"^job\s*role\s*:\s*(.+)$", stripped, flags=re.IGNORECASE)
         if match:
@@ -78,7 +84,7 @@ def _resolve_job_role_and_prompt(prompt: str) -> tuple[str, str]:
     cleaned_prompt = "\n".join(cleaned_lines).strip()
     if removed_any:
         return role, cleaned_prompt
-    return role, prompt
+    return role, normalized_prompt
 
 
 def _normalize_steps(raw_steps: List[Dict[str, Any]]) -> List[StepModel]:
